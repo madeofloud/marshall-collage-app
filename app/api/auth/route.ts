@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 365, // 1 year
     path: '/',
   });
   return res;
