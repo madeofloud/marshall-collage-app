@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { CollagePreview } from '@/components/CollagePreview';
 import { ControlPanel } from '@/components/ControlPanel';
+import { SessionManager } from '@/components/SessionManager';
 import {
   type PanelOverrides,
   type PanelOverride,
@@ -31,6 +32,27 @@ export default function HomePage() {
   const handleUpdatePanelOverride = (override: PanelOverride) => {
     if (!selectedPanelId) return;
     setPanelOverrides({ ...panelOverrides, [selectedPanelId]: override });
+  };
+
+  const handleLoadSession = (data: {
+    images: string[];
+    background: string;
+    rotationSpeed: number;
+    grainAmount: number;
+    panelOverrides: Record<string, unknown>;
+    format: string;
+    sizeTier: string;
+    codec: string;
+  }) => {
+    setImages(data.images ?? []);
+    setBackground(data.background ?? '#121212');
+    setRotationSpeed(data.rotationSpeed ?? 60);
+    setGrainAmount(data.grainAmount ?? 0.8);
+    setPanelOverrides((data.panelOverrides ?? {}) as PanelOverrides);
+    setFormat((data.format ?? '1x1') as AspectFormat);
+    setSizeTier((data.sizeTier ?? 'medium') as SizeTier);
+    setCodec((data.codec ?? 'h264') as 'h264' | 'prores');
+    setSelectedPanelId(null);
   };
 
   const handleExport = async () => {
@@ -66,10 +88,22 @@ export default function HomePage() {
     }
   };
 
+  const currentSessionData = {
+    images,
+    background,
+    rotationSpeed,
+    grainAmount,
+    panelOverrides,
+    format,
+    sizeTier,
+    codec,
+  };
+
   return (
     <main className="flex h-screen bg-neutral-900">
-      <header className="absolute top-0 left-0 right-80 px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10">
+      <header className="absolute top-0 left-0 right-80 px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between">
         <h1 className="text-sm font-semibold tracking-wide">Marshall Motion Studio</h1>
+        <SessionManager currentData={currentSessionData} onLoad={handleLoadSession} />
       </header>
 
       <CollagePreview
