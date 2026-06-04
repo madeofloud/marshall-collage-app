@@ -238,21 +238,19 @@ export const ControlPanel: React.FC<Props> = ({
         {/* Selected panel */}
         {selectedPanelId && panelOverride && (
           <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <SectionTitle>Selected Panel</SectionTitle>
-              {onToggleHidden && (
-                <button
-                  type="button"
-                  onClick={onToggleHidden}
-                  className="flex items-center gap-1 text-xs text-white/50 hover:text-white/90 transition mb-3"
-                  aria-label={isPanelHidden ? 'Show panel' : 'Hide panel'}
-                >
-                  {isPanelHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  {isPanelHidden ? 'Show' : 'Hide'}
-                </button>
-              )}
-            </div>
-            <p className="text-[10px] text-white/40 -mt-2 italic">
+            <SectionTitle>Selected Panel</SectionTitle>
+            {onToggleHidden && (
+              <button
+                type="button"
+                onClick={onToggleHidden}
+                className="flex items-center gap-1.5 w-full px-3 py-2 rounded bg-white/5 hover:bg-white/10 text-xs text-white/70 hover:text-white transition"
+                aria-label={isPanelHidden ? 'Show panel' : 'Hide panel'}
+              >
+                {isPanelHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {isPanelHidden ? 'Show object' : 'Hide object'}
+              </button>
+            )}
+            <p className="text-[10px] text-white/40 italic">
               Drag to rotate · Space to move · Backspace to delete
             </p>
             <SliderRow
