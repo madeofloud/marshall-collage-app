@@ -57,11 +57,13 @@ export const CollagePreview: React.FC<Props> = ({
     const onFrame = (e: { detail: { frame: number } }) => setFrame(e.detail.frame);
     player.addEventListener('play', onPlay);
     player.addEventListener('pause', onPause);
-    player.addEventListener('frameupdate', onFrame as EventListener);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    player.addEventListener('frameupdate', onFrame as any);
     return () => {
       player.removeEventListener('play', onPlay);
       player.removeEventListener('pause', onPause);
-      player.removeEventListener('frameupdate', onFrame as EventListener);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      player.removeEventListener('frameupdate', onFrame as any);
     };
   }, []);
 
