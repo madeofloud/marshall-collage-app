@@ -148,51 +148,54 @@ export const CollagePreview: React.FC<Props> = ({
   const timeLabel = `${pad(Math.floor(currentSec / 60))}:${pad(currentSec % 60)} / ${pad(Math.floor(totalSec / 60))}:${pad(totalSec % 60)}`;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-neutral-900 overflow-hidden p-8 pb-4 gap-3">
+    <div className="flex-1 relative bg-neutral-900 overflow-hidden">
       {images.length === 0 ? (
-        <div className="text-center text-white/40">
+        <div className="absolute inset-0 flex items-center justify-center text-white/40">
           <p className="text-sm">Upload images to see the collage</p>
         </div>
       ) : (
         <>
-          <div
-            ref={containerRef}
-            className="relative flex items-center justify-center min-h-0"
-            style={{ ...aspectStyle, maxWidth: '100%', maxHeight: 'calc(100% - 48px)', cursor }}
-            tabIndex={0}
-          >
-            <Player
-              ref={playerRef}
-              component={Collage}
-              durationInFrames={playerDuration}
-              fps={PREVIEW_FPS}
-              compositionWidth={previewDims.width}
-              compositionHeight={previewDims.height}
-              style={{ width: '100%', height: '100%' }}
-              loop
-              autoPlay
-              inputProps={{
-                images,
-                background,
-                backgroundImage: backgroundImage ?? undefined,
-                rotationSpeed,
-                grainAmount,
-                panelOverrides,
-                selectedPanel: selectedPanelId ?? undefined,
-                showSelection: true,
-                onSelectPanel: handleSelectPanel,
-                onBackgroundClick: handleBackgroundClick,
-              }}
-            />
-            <TransformHUD
-              mode={mode}
-              shiftHeld={shiftHeld}
-              hasSelection={selectedPanelId !== null}
-            />
+          {/* Canvas — fills all space above controls */}
+          <div className="absolute inset-0 bottom-12 flex items-center justify-center p-8">
+            <div
+              ref={containerRef}
+              className="relative"
+              style={{ ...aspectStyle, maxWidth: '100%', maxHeight: '100%', cursor }}
+              tabIndex={0}
+            >
+              <Player
+                ref={playerRef}
+                component={Collage}
+                durationInFrames={playerDuration}
+                fps={PREVIEW_FPS}
+                compositionWidth={previewDims.width}
+                compositionHeight={previewDims.height}
+                style={{ width: '100%', height: '100%' }}
+                loop
+                autoPlay
+                inputProps={{
+                  images,
+                  background,
+                  backgroundImage: backgroundImage ?? undefined,
+                  rotationSpeed,
+                  grainAmount,
+                  panelOverrides,
+                  selectedPanel: selectedPanelId ?? undefined,
+                  showSelection: true,
+                  onSelectPanel: handleSelectPanel,
+                  onBackgroundClick: handleBackgroundClick,
+                }}
+              />
+              <TransformHUD
+                mode={mode}
+                shiftHeld={shiftHeld}
+                hasSelection={selectedPanelId !== null}
+              />
+            </div>
           </div>
 
-          {/* Custom controls — works in Safari */}
-          <div className="flex items-center gap-3 w-full max-w-xl">
+          {/* Controls — fixed at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-12 flex items-center gap-3 px-6 border-t border-white/10 bg-neutral-950/80">
             <button
               type="button"
               onClick={togglePlay}
