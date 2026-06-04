@@ -13,7 +13,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="hidden md:block">{children}</div>
+        <div className="flex md:hidden h-screen items-center justify-center bg-neutral-900 px-8">
+          <div className="text-center space-y-3">
+            <p className="text-white text-lg font-semibold">Desktop only</p>
+            <p className="text-white/50 text-sm">This app is optimized for desktop.</p>
+          </div>
+        </div>
+      </body>
     </html>
   );
 }
