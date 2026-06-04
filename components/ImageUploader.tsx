@@ -2,11 +2,14 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
-import { Upload, X, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Upload, X, Loader2, AlertCircle, AlertTriangle, EyeOff } from 'lucide-react';
 
 type Props = {
   images: string[];
   onChange: (urls: string[]) => void;
+  selectedImageUrl?: string;
+  onSelectImage?: (url: string) => void;
+  hiddenImageUrls?: string[];
 };
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -30,7 +33,7 @@ type ErrorEntry = {
   message: string;
 };
 
-export const ImageUploader: React.FC<Props> = ({ images, onChange }) => {
+export const ImageUploader: React.FC<Props> = ({ images, onChange, selectedImageUrl, onSelectImage, hiddenImageUrls }) => {
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -276,19 +279,39 @@ export const ImageUploader: React.FC<Props> = ({ images, onChange }) => {
 
       {images.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
-          {images.map((url) => (
-            <div key={url} className="relative group aspect-square bg-white/5 rounded overflow-hidden">
-              <img src={url} alt="" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => handleRemove(url)}
-                className="absolute top-1 right-1 p-1 bg-black/70 rounded opacity-0 group-hover:opacity-100 transition"
-                aria-label="Remove image"
+          {images.map((url) => {
+            const isSelected = url === selectedImageUrl;
+            const isHidden = hiddenImageUrls?.includes(url) ?? false;
+            return (
+              <div
+                key={url}
+                className={`relative group aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
+                  isSelected ? 'border-2 border-marshall-gold' : 'border-2 border-transparent'
+                }`}
+                onClick={() => onSelectImage?.(url)}
               >
-                <X className="w-3 h-3 text-white" />
-              </button>
-            </div>
-          ))}
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  style={{ opacity: isHidden ? 0.35 : 1 }}
+                />
+                {isHidden && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <EyeOff className="w-4 h-4 text-white/70" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleRemove(url); }}
+                  className="absolute top-1 right-1 p-1 bg-black/70 rounded opacity-0 group-hover:opacity-100 transition"
+                  aria-label="Remove image"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

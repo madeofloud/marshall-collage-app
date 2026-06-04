@@ -17,6 +17,7 @@ export const Collage: React.FC<Props> = ({
   rotationSpeed,
   grainAmount,
   panelOverrides,
+  backgroundImage,
   selectedPanel,
   showSelection,
   onSelectPanel,
@@ -40,7 +41,9 @@ export const Collage: React.FC<Props> = ({
   const BASE = 450;
   const s = Math.min(width, height) / BASE;
 
-  const basePanels = generatePanels(images);
+  const basePanels = generatePanels(images).filter(
+    (p) => !panelOverrides[p.id]?.hidden
+  );
 
   const scaledPanels = basePanels.map((p) => {
     const override = panelOverrides[p.id];
@@ -71,6 +74,19 @@ export const Collage: React.FC<Props> = ({
       onClick={onBackgroundClick}
       style={{ background, perspective: 1600 * s }}
     >
+      {backgroundImage && (
+        <img
+          src={backgroundImage}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: -1,
+          }}
+        />
+      )}
       {grainAmount > 0 && (
         <div
           style={{

@@ -10,6 +10,7 @@ import {
   type AspectFormat,
   type SizeTier,
 } from '@/remotion/src/types';
+import { generatePanels } from '@/remotion/src/generation';
 
 export default function HomePage() {
   const [images, setImages] = useState<string[]>([]);
@@ -18,6 +19,7 @@ export default function HomePage() {
   const [grainAmount, setGrainAmount] = useState(0.8);
   const [panelOverrides, setPanelOverrides] = useState<PanelOverrides>({});
   const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null);
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const [format, setFormat] = useState<AspectFormat>('1x1');
   const [sizeTier, setSizeTier] = useState<SizeTier>('medium');
@@ -32,6 +34,47 @@ export default function HomePage() {
   const handleUpdatePanelOverride = (override: PanelOverride) => {
     if (!selectedPanelId) return;
     setPanelOverrides({ ...panelOverrides, [selectedPanelId]: override });
+  };
+
+  const handleSelectImage = (url: string) => {
+    const panel = generatePanels(images).find((p) => p.image === url);
+    if (!panel) return;
+    const id = panel.id;
+    // Ensure override exists (same pattern as handleSelectPanel in CollagePreview)
+    if (!panelOverrides[id]) {
+      const newOverride: PanelOverride = {
+        worldX: panel.worldX,
+        worldY: panel.worldY,
+        worldZ: panel.worldZ,
+        facingAngle: panel.facingAngle,
+        tiltX: panel.tiltX,
+        tiltZ: panel.tiltZ,
+        width: panel.width,
+      };
+      setPanelOverrides({ ...panelOverrides, [id]: newOverride });
+    }
+    setSelectedPanelId(id);
+  };
+
+  const selectedImageUrl = useMemo(
+    () => generatePanels(images).find((p) => p.id === selectedPanelId)?.image ?? null,
+    [images, selectedPanelId]
+  );
+
+  const hiddenImageUrls = useMemo(
+    () =>
+      images.filter((url) => {
+        const panel = generatePanels(images).find((p) => p.image === url);
+        return panel ? !!(panelOverrides[panel.id]?.hidden) : false;
+      }),
+    [images, panelOverrides]
+  );
+
+  const handleToggleHidden = () => {
+    if (!selectedPanelId) return;
+    const current = panelOverrides[selectedPanelId];
+    if (!current) return;
+    setPanelOverrides({ ...panelOverrides, [selectedPanelId]: { ...current, hidden: !current.hidden } });
   };
 
   const handleLoadSession = (data: {
@@ -52,6 +95,7 @@ export default function HomePage() {
     setFormat((data.format ?? '1x1') as AspectFormat);
     setSizeTier((data.sizeTier ?? 'medium') as SizeTier);
     setCodec((data.codec ?? 'h264') as 'h264' | 'prores');
+    setBackgroundImage((data as { backgroundImage?: string | null }).backgroundImage ?? null);
     setSelectedPanelId(null);
   };
 

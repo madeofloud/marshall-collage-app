@@ -18,6 +18,7 @@ export type PanelOverride = {
   tiltX: number;
   tiltZ: number;
   width: number;
+  hidden?: boolean;
 };
 
 export type PanelOverrides = Record<string, PanelOverride>;
@@ -28,6 +29,7 @@ export type CollageProps = {
   rotationSpeed: number;
   grainAmount: number;
   panelOverrides: PanelOverrides;
+  backgroundImage?: string;
 };
 
 // ----------------------------------------

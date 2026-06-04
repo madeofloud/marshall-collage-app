@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import * as Slider from '@radix-ui/react-slider';
+import { EyeOff, Eye, ImagePlus, X } from 'lucide-react';
 import { ImageUploader } from './ImageUploader';
 import {
   type PanelOverride,
@@ -34,6 +35,13 @@ type Props = {
   setCodec: (c: 'h264' | 'prores') => void;
   onExport: () => void;
   isExporting: boolean;
+  selectedImageUrl?: string;
+  onSelectImage?: (url: string) => void;
+  hiddenImageUrls?: string[];
+  onToggleHidden?: () => void;
+  isPanelHidden?: boolean;
+  backgroundImage?: string | null;
+  setBackgroundImage?: (url: string | null) => void;
 };
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -96,8 +104,30 @@ export const ControlPanel: React.FC<Props> = ({
   setCodec,
   onExport,
   isExporting,
+  selectedImageUrl,
+  onSelectImage,
+  hiddenImageUrls,
+  onToggleHidden,
+  isPanelHidden,
+  backgroundImage,
+  setBackgroundImage,
 }) => {
   const exportDims = getFormatDimensions(format, sizeTier);
+  const bgImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (data.url && setBackgroundImage) {
+      setBackgroundImage(data.url);
+    }
+    // Reset input so re-selecting same file works
+    e.target.value = '';
+  };
 
   return (
     <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto">
@@ -126,7 +156,13 @@ export const ControlPanel: React.FC<Props> = ({
         {/* Images */}
         <section>
           <SectionTitle>Images</SectionTitle>
-          <ImageUploader images={images} onChange={setImages} />
+          <ImageUploader
+            images={images}
+            onChange={setImages}
+            selectedImageUrl={selectedImageUrl}
+            onSelectImage={onSelectImage}
+            hiddenImageUrls={hiddenImageUrls}
+          />
         </section>
 
         {/* Background */}
@@ -145,6 +181,36 @@ export const ControlPanel: React.FC<Props> = ({
               onChange={(e) => setBackground(e.target.value)}
               className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             />
+          </div>
+          <div className="mt-2 space-y-2">
+            <input
+              ref={bgImageInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif"
+              className="hidden"
+              onChange={handleBgImageUpload}
+            />
+            <button
+              type="button"
+              onClick={() => bgImageInputRef.current?.click()}
+              className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white/90 transition"
+            >
+              <ImagePlus className="w-3.5 h-3.5" />
+              Upload background image
+            </button>
+            {backgroundImage && (
+              <div className="relative w-full h-16 rounded overflow-hidden bg-white/5">
+                <img src={backgroundImage} alt="Background" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setBackgroundImage?.(null)}
+                  className="absolute top-1 right-1 p-0.5 bg-black/70 rounded"
+                  aria-label="Remove background image"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -172,7 +238,20 @@ export const ControlPanel: React.FC<Props> = ({
         {/* Selected panel */}
         {selectedPanelId && panelOverride && (
           <section className="space-y-4">
-            <SectionTitle>Selected Panel</SectionTitle>
+            <div className="flex items-center justify-between">
+              <SectionTitle>Selected Panel</SectionTitle>
+              {onToggleHidden && (
+                <button
+                  type="button"
+                  onClick={onToggleHidden}
+                  className="flex items-center gap-1 text-xs text-white/50 hover:text-white/90 transition mb-3"
+                  aria-label={isPanelHidden ? 'Show panel' : 'Hide panel'}
+                >
+                  {isPanelHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  {isPanelHidden ? 'Show' : 'Hide'}
+                </button>
+              )}
+            </div>
             <p className="text-[10px] text-white/40 -mt-2 italic">
               Drag to rotate · Space to move · Backspace to delete
             </p>
@@ -222,7 +301,7 @@ export const ControlPanel: React.FC<Props> = ({
               label="Width"
               value={panelOverride.width}
               min={50}
-              max={300}
+              max={600}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, width: v })}
             />
           </section>
