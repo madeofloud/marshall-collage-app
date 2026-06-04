@@ -30,6 +30,7 @@ export const CollagePreview: React.FC<Props> = ({
   images,
   setImages,
   background,
+  backgroundImage,
   rotationSpeed,
   grainAmount,
   panelOverrides,
@@ -151,6 +152,7 @@ export const CollagePreview: React.FC<Props> = ({
             inputProps={{
               images,
               background,
+              backgroundImage: backgroundImage ?? undefined,
               rotationSpeed,
               grainAmount,
               panelOverrides,

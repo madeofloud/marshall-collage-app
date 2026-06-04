@@ -161,6 +161,7 @@ export default function HomePage() {
         setSelectedPanelId={setSelectedPanelId}
         setPanelOverrides={setPanelOverrides}
         format={format}
+        backgroundImage={backgroundImage ?? undefined}
       />
 
       <ControlPanel
@@ -183,6 +184,13 @@ export default function HomePage() {
         setCodec={setCodec}
         onExport={handleExport}
         isExporting={isExporting}
+        selectedImageUrl={selectedImageUrl ?? undefined}
+        onSelectImage={handleSelectImage}
+        hiddenImageUrls={hiddenImageUrls}
+        onToggleHidden={handleToggleHidden}
+        isPanelHidden={selectedPanelId ? !!(panelOverrides[selectedPanelId]?.hidden) : false}
+        backgroundImage={backgroundImage}
+        setBackgroundImage={setBackgroundImage}
       />
     </main>
   );
