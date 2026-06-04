@@ -68,12 +68,14 @@ export const CollagePreview: React.FC<Props> = ({
   const togglePlay = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (isPlaying) {
+    if (player.isPlaying()) {
       player.pause();
+      setIsPlaying(false);
     } else {
       player.play();
+      setIsPlaying(true);
     }
-  }, [isPlaying]);
+  }, []);
 
   const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = Number(e.target.value);
