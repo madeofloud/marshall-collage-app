@@ -68,13 +68,8 @@ export const CollagePreview: React.FC<Props> = ({
   const togglePlay = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (player.isPlaying()) {
-      player.pause();
-      setIsPlaying(false);
-    } else {
-      player.play();
-      setIsPlaying(true);
-    }
+    player.toggle();
+    setIsPlaying(player.isPlaying());
   }, []);
 
   const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +170,7 @@ export const CollagePreview: React.FC<Props> = ({
                 style={{ width: '100%', height: '100%' }}
                 loop
                 autoPlay
+                onReady={() => { playerRef.current?.play(); setIsPlaying(true); }}
                 inputProps={{
                   images,
                   background,
