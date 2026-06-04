@@ -148,7 +148,7 @@ export const CollagePreview: React.FC<Props> = ({
   const timeLabel = `${pad(Math.floor(currentSec / 60))}:${pad(currentSec % 60)} / ${pad(Math.floor(totalSec / 60))}:${pad(totalSec % 60)}`;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-neutral-900 overflow-hidden gap-3">
+    <div className="flex-1 flex flex-col items-center justify-center bg-neutral-900 overflow-hidden p-8 pb-4 gap-3">
       {images.length === 0 ? (
         <div className="text-center text-white/40">
           <p className="text-sm">Upload images to see the collage</p>
@@ -157,8 +157,8 @@ export const CollagePreview: React.FC<Props> = ({
         <>
           <div
             ref={containerRef}
-            className="w-full max-h-full relative flex items-center justify-center"
-            style={{ ...aspectStyle, maxWidth: '100%', cursor }}
+            className="relative flex items-center justify-center min-h-0"
+            style={{ ...aspectStyle, maxWidth: '100%', maxHeight: 'calc(100% - 48px)', cursor }}
             tabIndex={0}
           >
             <Player
