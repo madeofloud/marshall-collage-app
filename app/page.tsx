@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { CollagePreview } from '@/components/CollagePreview';
 import { ControlPanel } from '@/components/ControlPanel';
 import { SessionManager } from '@/components/SessionManager';
+import { StopMotionStudio } from '@/components/StopMotionStudio';
 import {
   type PanelOverrides,
   type PanelOverride,
@@ -13,6 +14,7 @@ import {
 import { generatePanels } from '@/remotion/src/generation';
 
 export default function HomePage() {
+  const [mode, setMode] = useState<'collage' | 'stopmotion'>('collage');
   const [images, setImages] = useState<string[]>([]);
   const [background, setBackground] = useState('#121212');
   const [rotationSpeed, setRotationSpeed] = useState(60);
@@ -145,53 +147,88 @@ export default function HomePage() {
 
   return (
     <main className="flex h-screen bg-neutral-900">
-      <header className="absolute top-0 left-0 right-80 px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between">
-        <h1 className="text-sm font-semibold tracking-wide">Marshall Motion Studio</h1>
-        <SessionManager currentData={currentSessionData} onLoad={handleLoadSession} />
+      <header
+        className={`absolute top-0 left-0 ${
+          mode === 'collage' ? 'right-80' : 'right-0'
+        } px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between`}
+      >
+        <div className="flex items-center gap-4">
+          <h1 className="text-sm font-semibold tracking-wide">Marshall Motion Studio</h1>
+          <div className="flex gap-1">
+            {(
+              [
+                ['collage', '360° Collage'],
+                ['stopmotion', 'Stop Motion'],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                type="button"
+                key={m}
+                onClick={() => setMode(m)}
+                className={`px-3 py-1 rounded text-xs font-medium transition ${
+                  mode === m
+                    ? 'bg-marshall-gold text-black'
+                    : 'bg-white/5 text-white/70 hover:bg-white/10'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {mode === 'collage' && (
+          <SessionManager currentData={currentSessionData} onLoad={handleLoadSession} />
+        )}
       </header>
 
-      <CollagePreview
-        images={images}
-        setImages={setImages}
-        background={background}
-        rotationSpeed={rotationSpeed}
-        grainAmount={grainAmount}
-        panelOverrides={panelOverrides}
-        selectedPanelId={selectedPanelId}
-        setSelectedPanelId={setSelectedPanelId}
-        setPanelOverrides={setPanelOverrides}
-        format={format}
-        backgroundImage={backgroundImage ?? undefined}
-      />
+      {mode === 'collage' ? (
+        <>
+          <CollagePreview
+            images={images}
+            setImages={setImages}
+            background={background}
+            rotationSpeed={rotationSpeed}
+            grainAmount={grainAmount}
+            panelOverrides={panelOverrides}
+            selectedPanelId={selectedPanelId}
+            setSelectedPanelId={setSelectedPanelId}
+            setPanelOverrides={setPanelOverrides}
+            format={format}
+            backgroundImage={backgroundImage ?? undefined}
+          />
 
-      <ControlPanel
-        images={images}
-        setImages={setImages}
-        background={background}
-        setBackground={setBackground}
-        rotationSpeed={rotationSpeed}
-        setRotationSpeed={setRotationSpeed}
-        grainAmount={grainAmount}
-        setGrainAmount={setGrainAmount}
-        selectedPanelId={selectedPanelId}
-        panelOverride={selectedOverride}
-        onUpdatePanelOverride={handleUpdatePanelOverride}
-        format={format}
-        setFormat={setFormat}
-        sizeTier={sizeTier}
-        setSizeTier={setSizeTier}
-        codec={codec}
-        setCodec={setCodec}
-        onExport={handleExport}
-        isExporting={isExporting}
-        selectedImageUrl={selectedImageUrl ?? undefined}
-        onSelectImage={handleSelectImage}
-        hiddenImageUrls={hiddenImageUrls}
-        onToggleHidden={handleToggleHidden}
-        isPanelHidden={selectedPanelId ? !!(panelOverrides[selectedPanelId]?.hidden) : false}
-        backgroundImage={backgroundImage}
-        setBackgroundImage={setBackgroundImage}
-      />
+          <ControlPanel
+            images={images}
+            setImages={setImages}
+            background={background}
+            setBackground={setBackground}
+            rotationSpeed={rotationSpeed}
+            setRotationSpeed={setRotationSpeed}
+            grainAmount={grainAmount}
+            setGrainAmount={setGrainAmount}
+            selectedPanelId={selectedPanelId}
+            panelOverride={selectedOverride}
+            onUpdatePanelOverride={handleUpdatePanelOverride}
+            format={format}
+            setFormat={setFormat}
+            sizeTier={sizeTier}
+            setSizeTier={setSizeTier}
+            codec={codec}
+            setCodec={setCodec}
+            onExport={handleExport}
+            isExporting={isExporting}
+            selectedImageUrl={selectedImageUrl ?? undefined}
+            onSelectImage={handleSelectImage}
+            hiddenImageUrls={hiddenImageUrls}
+            onToggleHidden={handleToggleHidden}
+            isPanelHidden={selectedPanelId ? !!(panelOverrides[selectedPanelId]?.hidden) : false}
+            backgroundImage={backgroundImage}
+            setBackgroundImage={setBackgroundImage}
+          />
+        </>
+      ) : (
+        <StopMotionStudio />
+      )}
     </main>
   );
 }

@@ -1,0 +1,272 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import * as Slider from '@radix-ui/react-slider';
+import { Check } from 'lucide-react';
+import { Player } from '@remotion/player';
+import { ImageUploader } from './ImageUploader';
+import { AlignmentBox } from './AlignmentBox';
+import { StopMotion } from '@/remotion/src/StopMotion';
+import {
+  type Alignment,
+  STOP_MOTION_FPS,
+  getStopMotionDuration,
+} from '@/remotion/src/stopMotionTypes';
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-3">{children}</h3>
+);
+
+const SliderRow = ({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
+}) => (
+  <div className="space-y-1.5">
+    <div className="flex justify-between text-xs">
+      <span className="text-white/70">{label}</span>
+      <span className="text-white/50 tabular-nums">{value.toFixed(step < 1 ? 2 : 0)}</span>
+    </div>
+    <Slider.Root
+      className="relative flex items-center select-none touch-none w-full h-5"
+      value={[value]}
+      onValueChange={(v) => onChange(v[0])}
+      min={min}
+      max={max}
+      step={step}
+    >
+      <Slider.Track className="bg-white/10 relative grow rounded-full h-1">
+        <Slider.Range className="absolute bg-marshall-gold rounded-full h-full" />
+      </Slider.Track>
+      <Slider.Thumb className="block w-3 h-3 bg-white rounded-full shadow hover:bg-marshall-gold transition" />
+    </Slider.Root>
+  </div>
+);
+
+export const StopMotionStudio: React.FC = () => {
+  const [images, setImages] = useState<string[]>([]);
+  const [alignments, setAlignments] = useState<Record<string, Alignment>>({});
+  const [framesPerImage, setFramesPerImage] = useState(12);
+  const [transition, setTransition] = useState<'cut' | 'crossfade'>('cut');
+  const [targetSize, setTargetSize] = useState(0.5);
+  const [background, setBackground] = useState('#121212');
+  const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
+
+  // Initialize default alignment for any newly-added image (reads natural size).
+  useEffect(() => {
+    images.forEach((url) => {
+      if (alignments[url]) return;
+      const img = new Image();
+      img.onload = () => {
+        setAlignments((prev) => {
+          if (prev[url]) return prev;
+          return {
+            ...prev,
+            [url]: {
+              x: 0.3,
+              y: 0.3,
+              w: 0.4,
+              h: 0.4,
+              aspect: img.naturalWidth / img.naturalHeight,
+            },
+          };
+        });
+      };
+      img.src = url;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images]);
+
+  const activeAlignment = activeAlignImage ? alignments[activeAlignImage] : null;
+
+  const handleBoxChange = (box: { x: number; y: number; w: number; h: number }) => {
+    if (!activeAlignImage) return;
+    setAlignments((prev) => {
+      const existing = prev[activeAlignImage];
+      if (!existing) return prev;
+      return { ...prev, [activeAlignImage]: { ...existing, ...box } };
+    });
+  };
+
+  return (
+    <div className="flex flex-1 h-full">
+      {/* Preview area */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-neutral-900 overflow-hidden">
+        {activeAlignImage && activeAlignment ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+            <div className="relative max-w-full max-h-[80%] flex items-center justify-center">
+              <div className="relative inline-block">
+                <img
+                  src={activeAlignImage}
+                  alt=""
+                  className="max-w-full max-h-[70vh] object-contain block select-none"
+                  draggable={false}
+                />
+                <AlignmentBox
+                  value={{
+                    x: activeAlignment.x,
+                    y: activeAlignment.y,
+                    w: activeAlignment.w,
+                    h: activeAlignment.h,
+                  }}
+                  onChange={handleBoxChange}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-white/40">
+              Drag to position · drag corner to resize the box around the product
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveAlignImage(null)}
+              className="px-4 py-2 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 transition"
+            >
+              Done
+            </button>
+          </div>
+        ) : images.length > 0 ? (
+          <div
+            className="w-full max-h-full relative flex items-center justify-center"
+            style={{ aspectRatio: '1 / 1', maxWidth: '100%' }}
+          >
+            <Player
+              component={StopMotion}
+              durationInFrames={getStopMotionDuration(images.length, framesPerImage)}
+              fps={STOP_MOTION_FPS}
+              compositionWidth={900}
+              compositionHeight={900}
+              style={{ width: '100%', height: '100%' }}
+              controls
+              loop
+              autoPlay
+              inputProps={{
+                images,
+                alignments,
+                framesPerImage,
+                transition,
+                targetSize,
+                background,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="text-center text-white/40">
+            <p className="text-sm">Upload product photos to begin</p>
+          </div>
+        )}
+      </div>
+
+      {/* Control panel */}
+      <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto">
+        <div className="p-5 space-y-6">
+          {/* Images */}
+          <section>
+            <SectionTitle>Images</SectionTitle>
+            <ImageUploader images={images} onChange={setImages} />
+          </section>
+
+          {/* Align product */}
+          {images.length > 0 && (
+            <section>
+              <SectionTitle>Align product</SectionTitle>
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((url) => {
+                  const hasAlignment = !!alignments[url];
+                  const isActive = url === activeAlignImage;
+                  return (
+                    <div
+                      key={url}
+                      className={`relative aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
+                        isActive
+                          ? 'ring-2 ring-marshall-gold'
+                          : hasAlignment
+                          ? 'ring-1 ring-marshall-gold/60'
+                          : ''
+                      }`}
+                      onClick={() => setActiveAlignImage(url)}
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      {hasAlignment && (
+                        <div className="absolute top-0.5 right-0.5 bg-marshall-gold rounded-full p-0.5">
+                          <Check className="w-2.5 h-2.5 text-black" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-white/40 mt-2">
+                Click a photo to mark the product box.
+              </p>
+            </section>
+          )}
+
+          {/* Animation */}
+          <section className="space-y-4">
+            <SectionTitle>Animation</SectionTitle>
+            <div className="flex gap-1">
+              {(['cut', 'crossfade'] as const).map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => setTransition(t)}
+                  className={`flex-1 py-1.5 rounded text-xs ${
+                    transition === t
+                      ? 'bg-marshall-gold text-black font-semibold'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  {t === 'cut' ? 'Cut' : 'Crossfade'}
+                </button>
+              ))}
+            </div>
+            <SliderRow
+              label="Frames per image"
+              value={framesPerImage}
+              min={2}
+              max={50}
+              onChange={setFramesPerImage}
+            />
+            <SliderRow
+              label="Product size"
+              value={targetSize}
+              min={0.2}
+              max={0.9}
+              step={0.05}
+              onChange={setTargetSize}
+            />
+          </section>
+
+          {/* Background */}
+          <section>
+            <SectionTitle>Background</SectionTitle>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={background}
+                onChange={(e) => setBackground(e.target.value)}
+                className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+              />
+              <input
+                type="text"
+                value={background}
+                onChange={(e) => setBackground(e.target.value)}
+                className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+              />
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
