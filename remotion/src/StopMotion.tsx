@@ -14,8 +14,13 @@ function circularDistance(a: number, b: number, total: number): number {
 }
 
 function computeImageLayout(a: Alignment, targetSize: number, W: number, H: number) {
-  const displayedImageHeight = (targetSize * H) / a.h;
-  const displayedImageWidth = displayedImageHeight * a.aspect;
+  // Clamp box size so the image never scales beyond ~4× the canvas height.
+  const safeH = Math.max(a.h, targetSize / 4);
+  const safeW = Math.max(a.w, targetSize / 4);
+  const effectiveA = { ...a, h: safeH, w: safeW };
+  const displayedImageHeight = (targetSize * H) / effectiveA.h;
+  const displayedImageWidth = displayedImageHeight * effectiveA.aspect;
+  // Center is computed from the ORIGINAL (un-clamped) box so the anchor stays consistent.
   const cx = (a.x + a.w / 2) * displayedImageWidth;
   const cy = (a.y + a.h / 2) * displayedImageHeight;
   const left = W / 2 - cx;

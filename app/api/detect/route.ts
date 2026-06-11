@@ -108,16 +108,31 @@ export async function POST(request: Request) {
     const x1 = clamp01((parsed.x1 ?? 0) / 1000);
     const y1 = clamp01((parsed.y1 ?? 0) / 1000);
 
-    const box: DetectBox = {
-      x: Math.min(x0, x1),
-      y: Math.min(y0, y1),
-      w: Math.abs(x1 - x0),
-      h: Math.abs(y1 - y0),
-    };
+    const rawX = Math.min(x0, x1);
+    const rawY = Math.min(y0, y1);
+    const rawW = Math.abs(x1 - x0);
+    const rawH = Math.abs(y1 - y0);
 
-    if (box.w <= 0 || box.h <= 0) {
+    if (rawW <= 0 || rawH <= 0) {
       return NextResponse.json({ found: false });
     }
+
+    // Add symmetric padding around the anchor so the zoom level stays reasonable
+    // (preserves center position, prevents the image rendering at 10 000+ px).
+    const PAD = 0.12;
+    const cx = rawX + rawW / 2;
+    const cy = rawY + rawH / 2;
+    const padX1 = clamp01(cx - rawW / 2 - PAD);
+    const padY1 = clamp01(cy - rawH / 2 - PAD);
+    const padX2 = clamp01(cx + rawW / 2 + PAD);
+    const padY2 = clamp01(cy + rawH / 2 + PAD);
+
+    const box: DetectBox = {
+      x: padX1,
+      y: padY1,
+      w: padX2 - padX1,
+      h: padY2 - padY1,
+    };
 
     return NextResponse.json({ found: true, box });
   } catch (err: unknown) {
