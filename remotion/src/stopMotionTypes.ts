@@ -13,6 +13,7 @@ export type StopMotionProps = {
   transition: 'cut' | 'crossfade';
   targetSize: number; // product height as fraction of canvas height, e.g. 0.5
   background: string;
+  showCenter?: boolean; // debug: render crosshair at canvas center
 };
 
 export const STOP_MOTION_FPS = 25;

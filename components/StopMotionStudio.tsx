@@ -66,27 +66,11 @@ export const StopMotionStudio: React.FC = () => {
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
 
-  // Initialize default alignment for any newly-added image (reads natural size).
+  // Auto-detect product for any newly-added image.
   useEffect(() => {
     images.forEach((url) => {
-      if (alignments[url]) return;
-      const img = new Image();
-      img.onload = () => {
-        setAlignments((prev) => {
-          if (prev[url]) return prev;
-          return {
-            ...prev,
-            [url]: {
-              x: 0.3,
-              y: 0.3,
-              w: 0.4,
-              h: 0.4,
-              aspect: img.naturalWidth / img.naturalHeight,
-            },
-          };
-        });
-      };
-      img.src = url;
+      if (alignments[url] || detectStatus[url]) return; // already done or running
+      detectOne(url);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images]);
@@ -114,6 +98,7 @@ export const StopMotionStudio: React.FC = () => {
   // Ask the server (Claude Vision) for the product box, then store it.
   const detectOne = async (url: string): Promise<boolean> => {
     setDetectStatus((s) => ({ ...s, [url]: 'loading' }));
+    const aspect = await loadAspect(url);
     try {
       const res = await fetch('/api/detect', {
         method: 'POST',
@@ -122,15 +107,23 @@ export const StopMotionStudio: React.FC = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.found || !data.box) {
+        // Fall back to centred default so the image renders
+        setAlignments((prev) => {
+          if (prev[url]) return prev;
+          return { ...prev, [url]: { x: 0.25, y: 0.25, w: 0.5, h: 0.5, aspect } };
+        });
         setDetectStatus((s) => ({ ...s, [url]: 'error' }));
         return false;
       }
-      const aspect = (await loadAspect(url));
       const { x, y, w, h } = data.box as { x: number; y: number; w: number; h: number };
       setAlignments((prev) => ({ ...prev, [url]: { x, y, w, h, aspect } }));
       setDetectStatus((s) => ({ ...s, [url]: 'done' }));
       return true;
     } catch {
+      setAlignments((prev) => {
+        if (prev[url]) return prev;
+        return { ...prev, [url]: { x: 0.25, y: 0.25, w: 0.5, h: 0.5, aspect } };
+      });
       setDetectStatus((s) => ({ ...s, [url]: 'error' }));
       return false;
     }
@@ -204,6 +197,7 @@ export const StopMotionStudio: React.FC = () => {
                 transition,
                 targetSize,
                 background,
+                showCenter: true,
               }}
             />
           </div>
@@ -242,7 +236,7 @@ export const StopMotionStudio: React.FC = () => {
               </button>
               <div className="grid grid-cols-4 gap-2">
                 {images.map((url) => {
-                  const hasAlignment = !!alignments[url];
+                  const alignment = alignments[url];
                   const isActive = url === activeAlignImage;
                   const status = detectStatus[url];
                   return (
@@ -251,13 +245,27 @@ export const StopMotionStudio: React.FC = () => {
                       className={`relative aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
                         isActive
                           ? 'ring-2 ring-marshall-gold'
-                          : hasAlignment
+                          : alignment
                           ? 'ring-1 ring-marshall-gold/60'
                           : ''
                       }`}
                       onClick={() => setActiveAlignImage(url)}
                     >
                       <img src={url} alt="" className="w-full h-full object-cover" />
+
+                      {/* Detected product box overlay */}
+                      {alignment && status !== 'error' && (
+                        <div
+                          className="absolute border border-marshall-gold/80 pointer-events-none"
+                          style={{
+                            left: `${alignment.x * 100}%`,
+                            top: `${alignment.y * 100}%`,
+                            width: `${alignment.w * 100}%`,
+                            height: `${alignment.h * 100}%`,
+                          }}
+                        />
+                      )}
+
                       {status === 'loading' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                           <Loader2 className="w-4 h-4 text-white animate-spin" />
@@ -268,7 +276,7 @@ export const StopMotionStudio: React.FC = () => {
                           <AlertCircle className="w-2.5 h-2.5 text-white" />
                         </div>
                       )}
-                      {status !== 'loading' && status !== 'error' && hasAlignment && (
+                      {status === 'done' && (
                         <div className="absolute top-0.5 right-0.5 bg-marshall-gold rounded-full p-0.5">
                           <Check className="w-2.5 h-2.5 text-black" />
                         </div>

@@ -30,6 +30,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
   transition,
   targetSize,
   background,
+  showCenter,
 }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
@@ -37,6 +38,8 @@ export const StopMotion: React.FC<StopMotionProps> = ({
   const N = images.length;
   const fpi = Math.max(1, framesPerImage);
   const total = N * fpi;
+
+  const crosshairSize = Math.min(W, H) * 0.04;
 
   return (
     <AbsoluteFill style={{ background, overflow: 'hidden' }}>
@@ -73,6 +76,28 @@ export const StopMotion: React.FC<StopMotionProps> = ({
           />
         );
       })}
+
+      {/* Centre crosshair – visible in preview to confirm the lock point */}
+      {showCenter && (
+        <>
+          <div style={{
+            position: 'absolute',
+            left: W / 2 - crosshairSize / 2,
+            top: H / 2 - 1,
+            width: crosshairSize,
+            height: 2,
+            background: 'rgba(255,200,0,0.7)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: W / 2 - 1,
+            top: H / 2 - crosshairSize / 2,
+            width: 2,
+            height: crosshairSize,
+            background: 'rgba(255,200,0,0.7)',
+          }} />
+        </>
+      )}
     </AbsoluteFill>
   );
 };
