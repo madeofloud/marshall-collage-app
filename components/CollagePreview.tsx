@@ -149,6 +149,7 @@ export const CollagePreview: React.FC<Props> = ({
             controls
             loop
             autoPlay
+            clickToPlay={false}
             inputProps={{
               images,
               background,
