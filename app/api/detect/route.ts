@@ -37,35 +37,35 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey });
 
   const prompt = [
-    'These photos all feature the SAME single Marshall-branded product, shown',
-    'from different angles and in different environments. It is usually a dark',
-    'over-ear Marshall headphone (a round cushioned ear cup bearing the brass',
-    '"Marshall" script logo), but it could also be a Marshall speaker or other',
-    'Marshall product.',
+    'In this photo a person is wearing dark over-ear Marshall headphones. Your',
+    'ONLY task is to locate the single round EAR CUP of the headphones that',
+    'faces the camera — the black padded circular disc with the brass/gold',
+    'cursive "Marshall" logo written across it.',
     '',
-    'Your job is to return a TIGHT, CONSISTENT bounding box around the single',
-    'most recognizable, stable face of the product, so that the same physical',
-    'anchor lands in the same place across every photo:',
-    '  • For headphones: box ONLY the one round ear cup that shows the Marshall',
-    '    logo (the circular cup facing the camera). Do NOT include the headband,',
-    '    the other ear cup, hair, or the head — just the round cup.',
-    '  • For a speaker or other product: box the whole product front face.',
+    'Return a tight bounding box around JUST that round ear cup disc.',
     '',
-    'Make the box as tight as possible around that anchor and be consistent in',
-    'how much you include from photo to photo.',
+    'CRITICAL — do NOT box any of these (they are common mistakes):',
+    '  • the face, cheek, nose, mouth, or eyes',
+    '  • sunglasses or glasses',
+    '  • hair or the top headband',
+    '  • the whole head',
+    'The target is ONLY the dark circular speaker cup with the Marshall script.',
+    'It is usually located over the ear, to the side of the face. If the photo',
+    'shows a Marshall speaker instead of headphones, box the speaker front face.',
     '',
     'Use a coordinate system where the top-left of the image is (0, 0) and the',
     'bottom-right is (1000, 1000).',
     '',
     'Respond with ONLY a JSON object, no prose, in exactly this shape:',
     '{"found": true, "x0": <left>, "y0": <top>, "x1": <right>, "y1": <bottom>}',
-    'If no Marshall product is visible, respond {"found": false}.',
+    'If no Marshall ear cup or product is visible, respond {"found": false}.',
   ].join('\n');
 
   try {
     const message = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 200,
+      temperature: 0,
       messages: [
         {
           role: 'user',
