@@ -37,19 +37,22 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey });
 
   const prompt = [
-    'This is a product photo of a Marshall speaker (or similar portable speaker)',
-    'placed in some environment. The product may be shown from any angle.',
+    'This photo features a Marshall product — most likely a pair of dark',
+    'over-ear Marshall headphones (with the brass "Marshall" script logo on the',
+    'ear cup), or possibly a Marshall speaker. It is usually worn by or near a',
+    'person, and may be shown from any angle and in any environment.',
     '',
-    'Find the single main product (the speaker) and return a tight bounding box',
-    'around its full visible extent — include the whole product but not the',
-    'surrounding environment.',
+    'Find the single Marshall product itself (NOT the person, NOT the head) and',
+    'return a tight bounding box around just the visible Marshall product — the',
+    'headphones (both ear cups + headband if visible) or the speaker. Exclude',
+    'the surrounding person and environment as much as possible.',
     '',
     'Use a coordinate system where the top-left of the image is (0, 0) and the',
     'bottom-right is (1000, 1000).',
     '',
     'Respond with ONLY a JSON object, no prose, in exactly this shape:',
     '{"found": true, "x0": <left>, "y0": <top>, "x1": <right>, "y1": <bottom>}',
-    'If no product is visible, respond {"found": false}.',
+    'If no Marshall product is visible, respond {"found": false}.',
   ].join('\n');
 
   try {
