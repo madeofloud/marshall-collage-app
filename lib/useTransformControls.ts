@@ -143,9 +143,12 @@ export function useTransformControls({
       if (modeRef.current === 'translate') return;
       if (e.button !== 0) return;
 
-      // Don't start a drag when clicking Remotion controls (seekbar, buttons)
-      const target = e.target as HTMLElement;
-      if (target.closest('button, input, [role="slider"]')) return;
+      // Ignore clicks in the Remotion controls bar (bottom ~48px of the player)
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        if (e.clientY >= rect.bottom - 48) return;
+      }
 
       isMouseDown = true;
       dragInitX = e.clientX;
