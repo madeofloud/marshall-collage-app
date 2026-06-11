@@ -170,10 +170,10 @@ export default function HomePage() {
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">Marshall Motion Studio</h1>
           <div className="flex gap-1">
+            {/* Stop Motion tab hidden while feature is in development */}
             {(
               [
                 ['collage', '360° Collage'],
-                ['stopmotion', 'Stop Motion'],
               ] as const
             ).map(([m, label]) => (
               <button
