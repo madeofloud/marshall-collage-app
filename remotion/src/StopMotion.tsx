@@ -66,19 +66,39 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
         const layout = computeImageLayout(a, targetSize, W, H);
 
+        // Where the detected product box maps onto the canvas (for debugging overlay)
+        const boxLeft = layout.left + a.x * layout.width;
+        const boxTop = layout.top + a.y * layout.height;
+        const boxW = a.w * layout.width;
+        const boxH = a.h * layout.height;
+
         return (
-          <img
-            key={url}
-            src={url}
-            style={{
-              position: 'absolute',
-              left: layout.left,
-              top: layout.top,
-              width: layout.width,
-              height: layout.height,
-              opacity,
-            }}
-          />
+          <React.Fragment key={url}>
+            <img
+              src={url}
+              style={{
+                position: 'absolute',
+                left: layout.left,
+                top: layout.top,
+                width: layout.width,
+                height: layout.height,
+                opacity,
+              }}
+            />
+            {showCenter && opacity > 0.5 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: boxLeft,
+                  top: boxTop,
+                  width: boxW,
+                  height: boxH,
+                  border: '2px solid rgba(255,200,0,0.6)',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+          </React.Fragment>
         );
       })}
 

@@ -119,19 +119,16 @@ export async function POST(request: Request) {
 
     // Add symmetric padding around the anchor so the zoom level stays reasonable
     // (preserves center position, prevents the image rendering at 10 000+ px).
+    // Note: we intentionally do NOT clamp to 0..1 here — keeping the box
+    // symmetric around the true anchor center is what guarantees the product
+    // lands exactly on the canvas center. Coordinates outside 0..1 are fine;
+    // they just mean part of the padding falls outside the image.
     const PAD = 0.12;
-    const cx = rawX + rawW / 2;
-    const cy = rawY + rawH / 2;
-    const padX1 = clamp01(cx - rawW / 2 - PAD);
-    const padY1 = clamp01(cy - rawH / 2 - PAD);
-    const padX2 = clamp01(cx + rawW / 2 + PAD);
-    const padY2 = clamp01(cy + rawH / 2 + PAD);
-
     const box: DetectBox = {
-      x: padX1,
-      y: padY1,
-      w: padX2 - padX1,
-      h: padY2 - padY1,
+      x: rawX - PAD,
+      y: rawY - PAD,
+      w: rawW + PAD * 2,
+      h: rawH + PAD * 2,
     };
 
     return NextResponse.json({ found: true, box });
