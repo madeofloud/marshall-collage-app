@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import * as Slider from '@radix-ui/react-slider';
-import { Check } from 'lucide-react';
+import { Check, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Player } from '@remotion/player';
 import { ImageUploader } from './ImageUploader';
 import { AlignmentBox } from './AlignmentBox';
@@ -62,6 +62,10 @@ export const StopMotionStudio: React.FC = () => {
   const [background, setBackground] = useState('#121212');
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
 
+  // Auto-detection state keyed by image URL: 'loading' | 'done' | 'error'
+  const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
+  const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+
   // Initialize default alignment for any newly-added image (reads natural size).
   useEffect(() => {
     images.forEach((url) => {
@@ -96,6 +100,50 @@ export const StopMotionStudio: React.FC = () => {
       if (!existing) return prev;
       return { ...prev, [activeAlignImage]: { ...existing, ...box } };
     });
+  };
+
+  // Load an image's natural aspect ratio (width / height).
+  const loadAspect = (url: string): Promise<number> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth / img.naturalHeight || 1);
+      img.onerror = () => resolve(1);
+      img.src = url;
+    });
+
+  // Ask the server (Claude Vision) for the product box, then store it.
+  const detectOne = async (url: string): Promise<boolean> => {
+    setDetectStatus((s) => ({ ...s, [url]: 'loading' }));
+    try {
+      const res = await fetch('/api/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.found || !data.box) {
+        setDetectStatus((s) => ({ ...s, [url]: 'error' }));
+        return false;
+      }
+      const aspect = (await loadAspect(url));
+      const { x, y, w, h } = data.box as { x: number; y: number; w: number; h: number };
+      setAlignments((prev) => ({ ...prev, [url]: { x, y, w, h, aspect } }));
+      setDetectStatus((s) => ({ ...s, [url]: 'done' }));
+      return true;
+    } catch {
+      setDetectStatus((s) => ({ ...s, [url]: 'error' }));
+      return false;
+    }
+  };
+
+  const handleAutoDetectAll = async () => {
+    if (isAutoDetecting || images.length === 0) return;
+    setIsAutoDetecting(true);
+    try {
+      await Promise.all(images.map((url) => detectOne(url)));
+    } finally {
+      setIsAutoDetecting(false);
+    }
   };
 
   return (
@@ -179,10 +227,24 @@ export const StopMotionStudio: React.FC = () => {
           {images.length > 0 && (
             <section>
               <SectionTitle>Align product</SectionTitle>
+              <button
+                type="button"
+                onClick={handleAutoDetectAll}
+                disabled={isAutoDetecting}
+                className="flex items-center justify-center gap-1.5 w-full mb-3 py-2 rounded bg-marshall-gold text-black text-xs font-semibold hover:bg-marshall-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {isAutoDetecting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )}
+                {isAutoDetecting ? 'Detecting…' : 'Auto-detect product'}
+              </button>
               <div className="grid grid-cols-4 gap-2">
                 {images.map((url) => {
                   const hasAlignment = !!alignments[url];
                   const isActive = url === activeAlignImage;
+                  const status = detectStatus[url];
                   return (
                     <div
                       key={url}
@@ -196,7 +258,17 @@ export const StopMotionStudio: React.FC = () => {
                       onClick={() => setActiveAlignImage(url)}
                     >
                       <img src={url} alt="" className="w-full h-full object-cover" />
-                      {hasAlignment && (
+                      {status === 'loading' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        </div>
+                      )}
+                      {status === 'error' && (
+                        <div className="absolute top-0.5 right-0.5 bg-red-500 rounded-full p-0.5">
+                          <AlertCircle className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                      {status !== 'loading' && status !== 'error' && hasAlignment && (
                         <div className="absolute top-0.5 right-0.5 bg-marshall-gold rounded-full p-0.5">
                           <Check className="w-2.5 h-2.5 text-black" />
                         </div>
@@ -206,7 +278,8 @@ export const StopMotionStudio: React.FC = () => {
                 })}
               </div>
               <p className="text-[10px] text-white/40 mt-2">
-                Click a photo to mark the product box.
+                Auto-detect finds the product in every photo. Click a photo to
+                fine-tune the box manually.
               </p>
             </section>
           )}
