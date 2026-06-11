@@ -66,7 +66,6 @@ const SliderRow = ({
   onChange: (v: number) => void;
   defaultValue?: number;
 }) => {
-  const canReset = defaultValue !== undefined && value !== defaultValue;
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between text-xs items-center">
@@ -77,9 +76,8 @@ const SliderRow = ({
             <button
               type="button"
               onClick={() => onChange(defaultValue)}
-              title="Reset"
-              className={`transition ${canReset ? 'text-white/50 hover:text-marshall-gold' : 'text-white/20 cursor-default'}`}
-              disabled={!canReset}
+              title="Reset to 0"
+              className="text-white/50 hover:text-marshall-gold transition"
             >
               <RotateCcw className="w-3 h-3" />
             </button>
@@ -244,7 +242,7 @@ export const ControlPanel: React.FC<Props> = ({
             max={360}
             step={5}
             onChange={setRotationSpeed}
-            defaultValue={60}
+            defaultValue={0}
           />
           <SliderRow
             label="Grain amount"
@@ -253,7 +251,7 @@ export const ControlPanel: React.FC<Props> = ({
             max={3}
             step={0.05}
             onChange={setGrainAmount}
-            defaultValue={0.8}
+            defaultValue={0}
           />
         </section>
 
@@ -281,7 +279,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldX: v })}
-              defaultValue={basePanelOverride?.worldX}
+              defaultValue={0}
             />
             <SliderRow
               label="Y position"
@@ -289,7 +287,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldY: v })}
-              defaultValue={basePanelOverride?.worldY}
+              defaultValue={0}
             />
             <SliderRow
               label="Z position"
@@ -297,7 +295,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldZ: v })}
-              defaultValue={basePanelOverride?.worldZ}
+              defaultValue={0}
             />
             <SliderRow
               label="Facing angle Y (°)"
@@ -305,7 +303,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-360}
               max={360}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, facingAngle: v })}
-              defaultValue={basePanelOverride?.facingAngle}
+              defaultValue={0}
             />
             <SliderRow
               label="Tilt X (°)"
@@ -313,7 +311,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-90}
               max={90}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, tiltX: v })}
-              defaultValue={basePanelOverride?.tiltX}
+              defaultValue={0}
             />
             <SliderRow
               label="Tilt Z (°)"
@@ -321,7 +319,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-90}
               max={90}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, tiltZ: v })}
-              defaultValue={basePanelOverride?.tiltZ}
+              defaultValue={0}
             />
             <SliderRow
               label="Width"
@@ -329,7 +327,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={50}
               max={600}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, width: v })}
-              defaultValue={basePanelOverride?.width}
+              defaultValue={basePanelOverride?.width ?? 200}
             />
           </section>
         )}
