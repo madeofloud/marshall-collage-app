@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import * as Slider from '@radix-ui/react-slider';
-import { EyeOff, Eye, ImagePlus, X } from 'lucide-react';
+import { EyeOff, Eye, ImagePlus, X, RotateCcw } from 'lucide-react';
 import { ImageUploader } from './ImageUploader';
 import {
   type PanelOverride,
@@ -42,6 +42,7 @@ type Props = {
   isPanelHidden?: boolean;
   backgroundImage?: string | null;
   setBackgroundImage?: (url: string | null) => void;
+  basePanelOverride?: PanelOverride | null;
 };
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -55,6 +56,7 @@ const SliderRow = ({
   max,
   step = 1,
   onChange,
+  defaultValue,
 }: {
   label: string;
   value: number;
@@ -62,27 +64,44 @@ const SliderRow = ({
   max: number;
   step?: number;
   onChange: (v: number) => void;
-}) => (
-  <div className="space-y-1.5">
-    <div className="flex justify-between text-xs">
-      <span className="text-white/70">{label}</span>
-      <span className="text-white/50 tabular-nums">{value.toFixed(step < 1 ? 2 : 0)}</span>
+  defaultValue?: number;
+}) => {
+  const canReset = defaultValue !== undefined && value !== defaultValue;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs items-center">
+        <span className="text-white/70">{label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-white/50 tabular-nums">{value.toFixed(step < 1 ? 2 : 0)}</span>
+          {defaultValue !== undefined && (
+            <button
+              type="button"
+              onClick={() => onChange(defaultValue)}
+              title="Reset"
+              className={`transition ${canReset ? 'text-white/50 hover:text-marshall-gold' : 'text-white/20 cursor-default'}`}
+              disabled={!canReset}
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
+      <Slider.Root
+        className="relative flex items-center select-none touch-none w-full h-5"
+        value={[value]}
+        onValueChange={(v) => onChange(v[0])}
+        min={min}
+        max={max}
+        step={step}
+      >
+        <Slider.Track className="bg-white/10 relative grow rounded-full h-1">
+          <Slider.Range className="absolute bg-marshall-gold rounded-full h-full" />
+        </Slider.Track>
+        <Slider.Thumb className="block w-3 h-3 bg-white rounded-full shadow hover:bg-marshall-gold transition" />
+      </Slider.Root>
     </div>
-    <Slider.Root
-      className="relative flex items-center select-none touch-none w-full h-5"
-      value={[value]}
-      onValueChange={(v) => onChange(v[0])}
-      min={min}
-      max={max}
-      step={step}
-    >
-      <Slider.Track className="bg-white/10 relative grow rounded-full h-1">
-        <Slider.Range className="absolute bg-marshall-gold rounded-full h-full" />
-      </Slider.Track>
-      <Slider.Thumb className="block w-3 h-3 bg-white rounded-full shadow hover:bg-marshall-gold transition" />
-    </Slider.Root>
-  </div>
-);
+  );
+};
 
 export const ControlPanel: React.FC<Props> = ({
   images,
@@ -111,6 +130,7 @@ export const ControlPanel: React.FC<Props> = ({
   isPanelHidden,
   backgroundImage,
   setBackgroundImage,
+  basePanelOverride,
 }) => {
   const exportDims = getFormatDimensions(format, sizeTier);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
@@ -224,6 +244,7 @@ export const ControlPanel: React.FC<Props> = ({
             max={360}
             step={5}
             onChange={setRotationSpeed}
+            defaultValue={60}
           />
           <SliderRow
             label="Grain amount"
@@ -232,6 +253,7 @@ export const ControlPanel: React.FC<Props> = ({
             max={3}
             step={0.05}
             onChange={setGrainAmount}
+            defaultValue={0.8}
           />
         </section>
 
@@ -259,6 +281,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldX: v })}
+              defaultValue={basePanelOverride?.worldX}
             />
             <SliderRow
               label="Y position"
@@ -266,6 +289,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldY: v })}
+              defaultValue={basePanelOverride?.worldY}
             />
             <SliderRow
               label="Z position"
@@ -273,6 +297,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-200}
               max={200}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, worldZ: v })}
+              defaultValue={basePanelOverride?.worldZ}
             />
             <SliderRow
               label="Facing angle Y (°)"
@@ -280,6 +305,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-360}
               max={360}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, facingAngle: v })}
+              defaultValue={basePanelOverride?.facingAngle}
             />
             <SliderRow
               label="Tilt X (°)"
@@ -287,6 +313,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-90}
               max={90}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, tiltX: v })}
+              defaultValue={basePanelOverride?.tiltX}
             />
             <SliderRow
               label="Tilt Z (°)"
@@ -294,6 +321,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={-90}
               max={90}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, tiltZ: v })}
+              defaultValue={basePanelOverride?.tiltZ}
             />
             <SliderRow
               label="Width"
@@ -301,6 +329,7 @@ export const ControlPanel: React.FC<Props> = ({
               min={50}
               max={600}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, width: v })}
+              defaultValue={basePanelOverride?.width}
             />
           </section>
         )}

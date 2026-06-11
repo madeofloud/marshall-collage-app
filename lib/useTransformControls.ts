@@ -143,6 +143,10 @@ export function useTransformControls({
       if (modeRef.current === 'translate') return;
       if (e.button !== 0) return;
 
+      // Don't start a drag when clicking Remotion controls (seekbar, buttons)
+      const target = e.target as HTMLElement;
+      if (target.closest('button, input, [role="slider"]')) return;
+
       isMouseDown = true;
       dragInitX = e.clientX;
       dragInitY = e.clientY;

@@ -63,6 +63,21 @@ export default function HomePage() {
     [images, selectedPanelId]
   );
 
+  const basePanelOverride = useMemo<PanelOverride | null>(() => {
+    if (!selectedPanelId) return null;
+    const panel = generatePanels(images).find((p) => p.id === selectedPanelId);
+    if (!panel) return null;
+    return {
+      worldX: panel.worldX,
+      worldY: panel.worldY,
+      worldZ: panel.worldZ,
+      facingAngle: panel.facingAngle,
+      tiltX: panel.tiltX,
+      tiltZ: panel.tiltZ,
+      width: panel.width,
+    };
+  }, [images, selectedPanelId]);
+
   const hiddenImageUrls = useMemo(
     () =>
       images.filter((url) => {
@@ -224,6 +239,7 @@ export default function HomePage() {
             isPanelHidden={selectedPanelId ? !!(panelOverrides[selectedPanelId]?.hidden) : false}
             backgroundImage={backgroundImage}
             setBackgroundImage={setBackgroundImage}
+            basePanelOverride={basePanelOverride}
           />
         </>
       ) : (
