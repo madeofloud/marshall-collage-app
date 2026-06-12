@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import { Check, Sparkles, Loader2, AlertCircle } from 'lucide-react';
-import { Player } from '@remotion/player';
+import { Player, type PlayerRef } from '@remotion/player';
 import { ImageUploader } from './ImageUploader';
 import { StopMotion } from '@/remotion/src/StopMotion';
 import {
@@ -85,6 +85,21 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const playerRef = useRef<PlayerRef>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (activeAlignImage) return; // don't intercept while editing alignment
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        playerRef.current?.toggle();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeAlignImage]);
 
   // Auto-detect for newly added images.
   useEffect(() => {
@@ -254,6 +269,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
             style={{ aspectRatio: '1 / 1', maxWidth: '100%' }}
           >
             <Player
+              ref={playerRef}
               component={StopMotion}
               durationInFrames={getStopMotionDuration(images.length, framesPerImage)}
               fps={STOP_MOTION_FPS}
