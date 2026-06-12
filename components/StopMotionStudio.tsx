@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import { Check, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Player } from '@remotion/player';
 import { ImageUploader } from './ImageUploader';
-import { AlignmentBox } from './AlignmentBox';
 import { StopMotion } from '@/remotion/src/StopMotion';
 import {
   type Alignment,
@@ -83,32 +82,19 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   setBackground,
 }) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
-
-  // Auto-detection state keyed by image URL: 'loading' | 'done' | 'error'
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  // Auto-detect product for any newly-added image.
+  // Auto-detect for newly added images.
   useEffect(() => {
     images.forEach((url) => {
-      if (alignments[url] || detectStatus[url]) return; // already done or running
+      if (alignments[url] || detectStatus[url]) return;
       detectOne(url);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images]);
 
-  const activeAlignment = activeAlignImage ? alignments[activeAlignImage] : null;
-
-  const handleBoxChange = (box: { x: number; y: number; w: number; h: number }) => {
-    if (!activeAlignImage) return;
-    setAlignments((prev) => {
-      const existing = prev[activeAlignImage];
-      if (!existing) return prev;
-      return { ...prev, [activeAlignImage]: { ...existing, ...box } };
-    });
-  };
-
-  // Load an image's natural aspect ratio (width / height).
   const loadAspect = (url: string): Promise<number> =>
     new Promise((resolve) => {
       const img = new Image();
@@ -117,7 +103,6 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
       img.src = url;
     });
 
-  // Ask the server (Claude Vision) for the product box, then store it.
   const detectOne = async (url: string): Promise<boolean> => {
     setDetectStatus((s) => ({ ...s, [url]: 'loading' }));
     const aspect = await loadAspect(url);
@@ -129,22 +114,24 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.found || !data.box) {
-        // Fall back to centred default so the image renders
         setAlignments((prev) => {
           if (prev[url]) return prev;
-          return { ...prev, [url]: { x: 0.25, y: 0.25, w: 0.5, h: 0.5, aspect } };
+          return { ...prev, [url]: { cx: 0.5, cy: 0.5, aspect } };
         });
         setDetectStatus((s) => ({ ...s, [url]: 'error' }));
         return false;
       }
       const { x, y, w, h } = data.box as { x: number; y: number; w: number; h: number };
-      setAlignments((prev) => ({ ...prev, [url]: { x, y, w, h, aspect } }));
+      // Convert bounding box to center point.
+      const cx = Math.max(0, Math.min(1, x + w / 2));
+      const cy = Math.max(0, Math.min(1, y + h / 2));
+      setAlignments((prev) => ({ ...prev, [url]: { cx, cy, aspect } }));
       setDetectStatus((s) => ({ ...s, [url]: 'done' }));
       return true;
     } catch {
       setAlignments((prev) => {
         if (prev[url]) return prev;
-        return { ...prev, [url]: { x: 0.25, y: 0.25, w: 0.5, h: 0.5, aspect } };
+        return { ...prev, [url]: { cx: 0.5, cy: 0.5, aspect } };
       });
       setDetectStatus((s) => ({ ...s, [url]: 'error' }));
       return false;
@@ -161,33 +148,64 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
     }
   };
 
+  // Click on the image to set the product center point.
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!activeAlignImage) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) / rect.width;
+    const cy = (e.clientY - rect.top) / rect.height;
+    setAlignments((prev) => {
+      const existing = prev[activeAlignImage];
+      return {
+        ...prev,
+        [activeAlignImage]: {
+          cx: Math.max(0, Math.min(1, cx)),
+          cy: Math.max(0, Math.min(1, cy)),
+          aspect: existing?.aspect ?? 1,
+        },
+      };
+    });
+  };
+
+  const activeAlignment = activeAlignImage ? alignments[activeAlignImage] : null;
+
   return (
     <div className="flex flex-1 h-full">
-      {/* Preview area */}
+      {/* Preview / editor area */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-neutral-900 overflow-hidden">
-        {activeAlignImage && activeAlignment ? (
+        {activeAlignImage ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-4">
             <div className="relative max-w-full max-h-[80%] flex items-center justify-center">
-              <div className="relative inline-block">
+              <div className="relative inline-block cursor-crosshair">
                 <img
+                  ref={imgRef}
                   src={activeAlignImage}
                   alt=""
                   className="max-w-full max-h-[70vh] object-contain block select-none"
                   draggable={false}
+                  onClick={handleImageClick}
                 />
-                <AlignmentBox
-                  value={{
-                    x: activeAlignment.x,
-                    y: activeAlignment.y,
-                    w: activeAlignment.w,
-                    h: activeAlignment.h,
-                  }}
-                  onChange={handleBoxChange}
-                />
+                {/* Center point marker */}
+                {activeAlignment && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${activeAlignment.cx * 100}%`,
+                      top: `${activeAlignment.cy * 100}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    {/* Crosshair lines */}
+                    <div style={{ position: 'absolute', width: 28, height: 2, background: 'rgba(255,200,0,0.9)', top: -1, left: -14 }} />
+                    <div style={{ position: 'absolute', width: 2, height: 28, background: 'rgba(255,200,0,0.9)', left: -1, top: -14 }} />
+                    {/* Center dot */}
+                    <div style={{ position: 'absolute', width: 8, height: 8, borderRadius: '50%', background: '#FFC800', top: -4, left: -4 }} />
+                  </div>
+                )}
               </div>
             </div>
-            <p className="text-xs text-white/40">
-              Draw a tight box around the product. Its <span className="text-marshall-gold/70">center</span> is automatically locked to the canvas center in the animation.
+            <p className="text-xs text-white/50">
+              Click on the <span className="text-marshall-gold">product center</span> — that point will be locked to the canvas center in the animation
             </p>
             <button
               type="button"
@@ -233,13 +251,11 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
       {/* Control panel */}
       <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto">
         <div className="p-5 space-y-6">
-          {/* Images */}
           <section>
             <SectionTitle>Images</SectionTitle>
             <ImageUploader images={images} onChange={setImages} />
           </section>
 
-          {/* Align product */}
           {images.length > 0 && (
             <section>
               <SectionTitle>Align product</SectionTitle>
@@ -261,6 +277,14 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   const alignment = alignments[url];
                   const isActive = url === activeAlignImage;
                   const status = detectStatus[url];
+                  // Center point mapped onto the letterboxed thumbnail
+                  const r = alignment?.aspect ?? 1;
+                  const fw = r >= 1 ? 1 : r;
+                  const fh = r >= 1 ? 1 / r : 1;
+                  const ox = (1 - fw) / 2;
+                  const oy = (1 - fh) / 2;
+                  const dotLeft = alignment ? (ox + (alignment.cx ?? 0.5) * fw) * 100 : 50;
+                  const dotTop  = alignment ? (oy + (alignment.cy ?? 0.5) * fh) * 100 : 50;
                   return (
                     <div
                       key={url}
@@ -275,27 +299,22 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                     >
                       <img src={url} alt="" className="w-full h-full object-contain" />
 
-                      {/* Detected product box overlay — mapped onto the
-                          object-contain (letterboxed) image inside the square cell */}
-                      {alignment && status !== 'error' && (() => {
-                        const r = alignment.aspect || 1;
-                        // Fraction of the square cell the image occupies + its offset.
-                        const fw = r >= 1 ? 1 : r;        // image width fraction
-                        const fh = r >= 1 ? 1 / r : 1;    // image height fraction
-                        const ox = (1 - fw) / 2;           // horizontal letterbox
-                        const oy = (1 - fh) / 2;           // vertical letterbox
-                        return (
-                          <div
-                            className="absolute border border-marshall-gold/80 pointer-events-none"
-                            style={{
-                              left: `${(ox + alignment.x * fw) * 100}%`,
-                              top: `${(oy + alignment.y * fh) * 100}%`,
-                              width: `${alignment.w * fw * 100}%`,
-                              height: `${alignment.h * fh * 100}%`,
-                            }}
-                          />
-                        );
-                      })()}
+                      {/* Center point dot on thumbnail */}
+                      {alignment && status !== 'error' && (
+                        <div
+                          className="absolute pointer-events-none"
+                          style={{
+                            left: `${dotLeft}%`,
+                            top: `${dotTop}%`,
+                            transform: 'translate(-50%, -50%)',
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: '#FFC800',
+                            boxShadow: '0 0 0 2px rgba(0,0,0,0.6)',
+                          }}
+                        />
+                      )}
 
                       {status === 'loading' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -317,13 +336,11 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 })}
               </div>
               <p className="text-[10px] text-white/40 mt-2">
-                Auto-detect finds the product in every photo. Click a photo to
-                fine-tune the box manually.
+                Auto-detect sets a center point on each photo. Click any photo to correct it manually.
               </p>
             </section>
           )}
 
-          {/* Animation */}
           <section className="space-y-4">
             <SectionTitle>Animation</SectionTitle>
             <div className="flex gap-1">
@@ -342,24 +359,10 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 </button>
               ))}
             </div>
-            <SliderRow
-              label="Frames per image"
-              value={framesPerImage}
-              min={2}
-              max={50}
-              onChange={setFramesPerImage}
-            />
-            <SliderRow
-              label="Product size"
-              value={targetSize}
-              min={0.2}
-              max={0.9}
-              step={0.05}
-              onChange={setTargetSize}
-            />
+            <SliderRow label="Frames per image" value={framesPerImage} min={2} max={50} onChange={setFramesPerImage} />
+            <SliderRow label="Product size" value={targetSize} min={0.2} max={0.9} step={0.05} onChange={setTargetSize} />
           </section>
 
-          {/* Background */}
           <section>
             <SectionTitle>Background</SectionTitle>
             <div className="flex items-center gap-2">

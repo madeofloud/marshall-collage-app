@@ -9,29 +9,17 @@ function circularDistance(a: number, b: number, total: number): number {
   return d;
 }
 
-/**
- * Returns the scale needed so the product box height fills targetSize * H,
- * and the offset (in image pixels) from the image top-left to the box center.
- *
- * Rendering:
- *   - Place a zero-size anchor div exactly at (W/2, H/2) — canvas center.
- *   - Position the image inside it at left:-boxCenterX, top:-boxCenterY.
- *   - Result: the box center is guaranteed to be at canvas center regardless
- *     of any other values.
- */
-function computeLayout(a: Alignment, targetSize: number, canvasH: number) {
-  const aspect = a.aspect > 0 ? a.aspect : 1;
-  const boxH = Math.max(a.h, 0.02); // floor prevents divide-by-zero only
-
-  // Scale factor: box height → targetSize × canvas height
-  const imgH = (targetSize * canvasH) / boxH;
-  const imgW = imgH * aspect;
-
-  // Distance from image top-left to the box center, in rendered pixels
-  const boxCenterX = (a.x + a.w / 2) * imgW;
-  const boxCenterY = (a.y + a.h / 2) * imgH;
-
-  return { imgW, imgH, boxCenterX, boxCenterY };
+// Migrate legacy bounding-box alignments to the cx/cy format.
+function getCenterPoint(a: Alignment): { cx: number; cy: number } {
+  if (typeof a.cx === 'number' && typeof a.cy === 'number') {
+    return { cx: a.cx, cy: a.cy };
+  }
+  // Legacy: derive center from bounding box.
+  const x = a.x ?? 0.25;
+  const y = a.y ?? 0.25;
+  const w = a.w ?? 0.5;
+  const h = a.h ?? 0.5;
+  return { cx: x + w / 2, cy: y + h / 2 };
 }
 
 export const StopMotion: React.FC<StopMotionProps> = ({
@@ -49,7 +37,6 @@ export const StopMotion: React.FC<StopMotionProps> = ({
   const N = images.length;
   const fpi = Math.max(1, framesPerImage);
   const total = N * fpi;
-
   const crosshairSize = Math.min(W, H) * 0.04;
 
   return (
@@ -70,46 +57,35 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
         if (opacity <= 0) return null;
 
-        const { imgW, imgH, boxCenterX, boxCenterY } = computeLayout(a, targetSize, H);
+        const aspect = a.aspect > 0 ? a.aspect : 1;
+        const { cx, cy } = getCenterPoint(a);
 
-        // Position the image so the box center lands exactly on canvas center.
-        // (left = W/2 - boxCenterX means: the point boxCenterX into the image
-        // sits at W/2.) Direct positioning — proven to render reliably.
-        const imgLeft = W / 2 - boxCenterX;
-        const imgTop = H / 2 - boxCenterY;
+        // Scale: displayed image height = targetSize × canvas height.
+        // (Same factor for every image → global product size controlled by slider.)
+        const imgH = targetSize * H;
+        const imgW = imgH * aspect;
+
+        // Position: product center point (cx, cy) locked to canvas center (W/2, H/2).
+        const imgLeft = W / 2 - cx * imgW;
+        const imgTop  = H / 2 - cy * imgH;
 
         return (
-          <React.Fragment key={url}>
-            <img
-              src={url}
-              style={{
-                position: 'absolute',
-                left: imgLeft,
-                top: imgTop,
-                width: imgW,
-                height: imgH,
-                opacity,
-              }}
-            />
-
-            {/* Debug: box outline — its center is always at canvas center */}
-            {showCenter && opacity > 0.5 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: W / 2 - (a.w / 2) * imgW,
-                  top: H / 2 - (a.h / 2) * imgH,
-                  width: a.w * imgW,
-                  height: a.h * imgH,
-                  border: '2px solid rgba(255,200,0,0.6)',
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-          </React.Fragment>
+          <img
+            key={url}
+            src={url}
+            style={{
+              position: 'absolute',
+              left: imgLeft,
+              top: imgTop,
+              width: imgW,
+              height: imgH,
+              opacity,
+            }}
+          />
         );
       })}
 
+      {/* Canvas center crosshair */}
       {showCenter && (
         <>
           <div style={{
