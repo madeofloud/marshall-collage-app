@@ -74,20 +74,16 @@ export const StopMotion: React.FC<StopMotionProps> = ({
         const { cx, cy } = getCenterPoint(a);
         const angle = a.angle ?? 0;
 
-        // Scale: if logoWidth known (and sane), scale so logo spans targetSize * W.
-        // A sane logoWidth is ≥5% of image width. If logoWidth would make the
-        // image more than 3× the canvas width, fall back to height-based scaling.
+        // Scale: target = logo should span (targetSize × canvas width) pixels.
+        // logoWidth is the logo's width as a fraction of the image width, so the
+        // image must be scaled to: imgW = targetSize·W / logoWidth.
+        // This makes the logo the same pixel width on every frame.
+        // Fallback (no logoWidth): treat targetSize as image-height fraction.
         let imgW: number, imgH: number;
         const lw = a.logoWidth;
-        if (lw && lw >= 0.05) {
-          const candidateW = (targetSize * W) / lw;
-          if (candidateW <= W * 3) {
-            imgW = candidateW;
-            imgH = imgW / aspect;
-          } else {
-            imgH = targetSize * H;
-            imgW = imgH * aspect;
-          }
+        if (lw && lw > 0.005) {
+          imgW = (targetSize * W) / lw;
+          imgH = imgW / aspect;
         } else {
           imgH = targetSize * H;
           imgW = imgH * aspect;

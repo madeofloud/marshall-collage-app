@@ -21,8 +21,10 @@ export type StopMotionProps = {
   alignments: Record<string, Alignment>;
   framesPerImage: number;
   transition: 'cut' | 'crossfade';
-  targetSize: number; // logo width as fraction of canvas width (when logoWidth known)
-                      // or image height as fraction of canvas height (legacy)
+  targetSize: number; // desired logo width as a fraction of canvas width.
+                      // Combined with each image's logoWidth this normalizes the
+                      // logo to the same pixel width on every frame.
+                      // (Legacy: image-height fraction when logoWidth unknown.)
   background: string;
   backgroundImage?: string; // optional full-bleed background image URL
   showCenter?: boolean;

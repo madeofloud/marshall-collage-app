@@ -34,7 +34,7 @@ export default function HomePage() {
   const [smAlignments, setSmAlignments] = useState<Record<string, Alignment>>({});
   const [smFramesPerImage, setSmFramesPerImage] = useState(12);
   const [smTransition, setSmTransition] = useState<'cut' | 'crossfade'>('cut');
-  const [smTargetSize, setSmTargetSize] = useState(0.5);
+  const [smTargetSize, setSmTargetSize] = useState(0.18);
   const [smBackground, setSmBackground] = useState('#121212');
   const [smBackgroundImage, setSmBackgroundImage] = useState<string | null>(null);
   const [smFormat, setSmFormat] = useState<AspectFormat>('1x1');
@@ -151,7 +151,7 @@ export default function HomePage() {
     setSmAlignments((data.alignments as Record<string, Alignment>) ?? {});
     setSmFramesPerImage((data.framesPerImage as number) ?? 12);
     setSmTransition((data.transition as 'cut' | 'crossfade') ?? 'cut');
-    setSmTargetSize((data.targetSize as number) ?? 0.5);
+    setSmTargetSize((data.targetSize as number) ?? 0.18);
     setSmBackground((data.background as string) ?? '#121212');
     setSmBackgroundImage((data.backgroundImage as string | null) ?? null);
     setSmFormat((data.format as AspectFormat) ?? '1x1');
@@ -222,7 +222,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">2.6</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">2.7</span>
           </h1>
           <div className="flex gap-1">
             {(

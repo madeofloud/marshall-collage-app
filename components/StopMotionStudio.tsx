@@ -102,6 +102,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+  const [showCenter, setShowCenter] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
   const playerRef = useRef<PlayerRef>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
@@ -250,6 +251,16 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
     });
   };
 
+  // Patch one field of the active alignment (manual fine-tuning).
+  const patchActiveAlignment = (patch: Partial<Alignment>) => {
+    if (!activeAlignImage) return;
+    setAlignments((prev) => {
+      const existing = prev[activeAlignImage];
+      if (!existing) return prev;
+      return { ...prev, [activeAlignImage]: { ...existing, ...patch } };
+    });
+  };
+
   const activeAlignment = activeAlignImage ? alignments[activeAlignImage] : null;
 
   return (
@@ -271,6 +282,28 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   draggable={false}
                   onClick={handleImageClick}
                 />
+                {/* Logo-width guide bar — shows the detected angle + width laid
+                    over the actual logo. Drag the fine-tune sliders until the
+                    bar covers the "Marshall" script exactly. */}
+                {activeAlignment && activeAlignment.logoWidth != null && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${activeAlignment.cx * 100}%`,
+                      top: `${activeAlignment.cy * 100}%`,
+                      width: `${activeAlignment.logoWidth * 100}%`,
+                      height: 0,
+                      transform: `translate(-50%, -50%) rotate(${activeAlignment.angle ?? 0}deg)`,
+                      transformOrigin: 'center',
+                    }}
+                  >
+                    {/* width line */}
+                    <div style={{ position: 'absolute', left: 0, right: 0, top: -1, height: 2, background: 'rgba(0,200,255,0.85)' }} />
+                    {/* end ticks */}
+                    <div style={{ position: 'absolute', left: 0, top: -7, width: 2, height: 14, background: 'rgba(0,200,255,0.85)' }} />
+                    <div style={{ position: 'absolute', right: 0, top: -7, width: 2, height: 14, background: 'rgba(0,200,255,0.85)' }} />
+                  </div>
+                )}
                 {/* Center point marker */}
                 {activeAlignment && (
                   <div
@@ -290,21 +323,34 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 )}
               </div>
             </div>
+            <p className="text-xs text-white/50 text-center max-w-md">
+              Klicka på loggans mitt för att sätta <span className="text-marshall-gold">centerpunkt</span>.
+              Justera <span style={{ color: 'rgb(0,200,255)' }}>vinkel &amp; bredd</span> så det blå fältet
+              täcker &quot;Marshall&quot;-texten exakt.
+            </p>
             {activeAlignment && (
-              <div className="text-[10px] tabular-nums text-center space-x-3 text-white/40">
-                <span>cx <span className="text-white/70">{activeAlignment.cx.toFixed(3)}</span></span>
-                <span>cy <span className="text-white/70">{activeAlignment.cy.toFixed(3)}</span></span>
-                {activeAlignment.angle != null && (
-                  <span>angle <span className="text-white/70">{activeAlignment.angle.toFixed(1)}°</span></span>
-                )}
-                {activeAlignment.logoWidth != null && (
-                  <span>logo <span className="text-white/70">{(activeAlignment.logoWidth * 100).toFixed(1)}%</span></span>
-                )}
+              <div className="w-full max-w-md space-y-3 bg-white/5 rounded-lg p-3">
+                <SliderRow
+                  label="Vinkel (°)"
+                  value={activeAlignment.angle ?? 0}
+                  min={-30}
+                  max={30}
+                  step={0.5}
+                  onChange={(v) => patchActiveAlignment({ angle: v })}
+                />
+                <SliderRow
+                  label="Loggbredd (% av bild)"
+                  value={(activeAlignment.logoWidth ?? 0.15) * 100}
+                  min={2}
+                  max={60}
+                  step={0.5}
+                  onChange={(v) => patchActiveAlignment({ logoWidth: v / 100 })}
+                />
+                <div className="text-[10px] tabular-nums text-center text-white/40">
+                  cx {activeAlignment.cx.toFixed(3)} · cy {activeAlignment.cy.toFixed(3)}
+                </div>
               </div>
             )}
-            <p className="text-xs text-white/50">
-              Klicka på <span className="text-marshall-gold">Marshall-loggan</span> för att sätta centerpunkt manuellt
-            </p>
             <button
               type="button"
               onClick={() => setActiveAlignImage(null)}
@@ -337,7 +383,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 targetSize,
                 background,
                 backgroundImage: backgroundImage ?? undefined,
-                showCenter: true,
+                showCenter,
               }}
             />
           </div>
@@ -521,7 +567,18 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
               ))}
             </div>
             <SliderRow label="Frames per image" value={framesPerImage} min={2} max={50} onChange={setFramesPerImage} />
-            <SliderRow label="Product size" value={targetSize} min={0.2} max={0.9} step={0.05} onChange={setTargetSize} />
+            <SliderRow label="Logo size (% av canvas)" value={targetSize} min={0.05} max={0.4} step={0.01} onChange={setTargetSize} />
+            <p className="text-[10px] text-white/40 -mt-1">
+              Loggan normaliseras till denna bredd på alla bilder.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCenter((v) => !v)}
+              className="flex items-center gap-1.5 w-full px-3 py-2 rounded bg-white/5 hover:bg-white/10 text-xs text-white/70 hover:text-white transition"
+            >
+              {showCenter ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showCenter ? 'Göm guidekryss' : 'Visa guidekryss'}
+            </button>
           </section>
 
           <section>
