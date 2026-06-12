@@ -290,8 +290,20 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 )}
               </div>
             </div>
+            {activeAlignment && (
+              <div className="text-[10px] tabular-nums text-center space-x-3 text-white/40">
+                <span>cx <span className="text-white/70">{activeAlignment.cx.toFixed(3)}</span></span>
+                <span>cy <span className="text-white/70">{activeAlignment.cy.toFixed(3)}</span></span>
+                {activeAlignment.angle != null && (
+                  <span>angle <span className="text-white/70">{activeAlignment.angle.toFixed(1)}°</span></span>
+                )}
+                {activeAlignment.logoWidth != null && (
+                  <span>logo <span className="text-white/70">{(activeAlignment.logoWidth * 100).toFixed(1)}%</span></span>
+                )}
+              </div>
+            )}
             <p className="text-xs text-white/50">
-              Click on the <span className="text-marshall-gold">product center</span> — that point will be locked to the canvas center in the animation
+              Klicka på <span className="text-marshall-gold">Marshall-loggan</span> för att sätta centerpunkt manuellt
             </p>
             <button
               type="button"
@@ -380,12 +392,11 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 )}
                 {isAutoDetecting ? 'Detecting…' : 'Auto-detect product'}
               </button>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="space-y-1">
                 {images.map((url) => {
                   const alignment = alignments[url];
                   const isActive = url === activeAlignImage;
                   const status = detectStatus[url];
-                  // Center point mapped onto the letterboxed thumbnail
                   const r = alignment?.aspect ?? 1;
                   const fw = r >= 1 ? 1 : r;
                   const fh = r >= 1 ? 1 / r : 1;
@@ -395,78 +406,98 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   const dotTop  = alignment ? (oy + (alignment.cy ?? 0.5) * fh) * 100 : 50;
                   const isHidden = hiddenImages.includes(url);
                   return (
-                    <div
-                      key={url}
-                      className={`relative group aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
-                        isActive
-                          ? 'ring-2 ring-marshall-gold'
-                          : alignment
-                          ? 'ring-1 ring-marshall-gold/60'
-                          : ''
-                      }`}
-                      onClick={() => setActiveAlignImage(url)}
-                    >
-                      <img
-                        src={url}
-                        alt=""
-                        className="w-full h-full object-contain"
-                        style={{ opacity: isHidden ? 0.3 : 1 }}
-                      />
-
-                      {/* Hide / show toggle */}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); toggleHidden(url); }}
-                        className={`absolute bottom-0.5 left-0.5 p-0.5 bg-black/70 rounded transition ${
-                          isHidden ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    <div key={url} className="flex items-center gap-2">
+                      {/* Thumbnail */}
+                      <div
+                        className={`relative flex-shrink-0 w-12 h-12 bg-white/5 rounded overflow-hidden cursor-pointer ${
+                          isActive ? 'ring-2 ring-marshall-gold' : alignment ? 'ring-1 ring-marshall-gold/40' : ''
                         }`}
-                        aria-label={isHidden ? 'Show image' : 'Hide image'}
+                        onClick={() => setActiveAlignImage(url)}
                       >
-                        {isHidden ? (
-                          <EyeOff className="w-2.5 h-2.5 text-white" />
-                        ) : (
-                          <Eye className="w-2.5 h-2.5 text-white" />
-                        )}
-                      </button>
-
-                      {/* Center point dot on thumbnail */}
-                      {alignment && status !== 'error' && !isHidden && (
-                        <div
-                          className="absolute pointer-events-none"
-                          style={{
-                            left: `${dotLeft}%`,
-                            top: `${dotTop}%`,
-                            transform: 'translate(-50%, -50%)',
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            background: '#FFC800',
-                            boxShadow: '0 0 0 2px rgba(0,0,0,0.6)',
-                          }}
+                        <img
+                          src={url}
+                          alt=""
+                          className="w-full h-full object-contain"
+                          style={{ opacity: isHidden ? 0.3 : 1 }}
                         />
-                      )}
+                        {alignment && status !== 'error' && !isHidden && (
+                          <div
+                            className="absolute pointer-events-none"
+                            style={{
+                              left: `${dotLeft}%`,
+                              top: `${dotTop}%`,
+                              transform: 'translate(-50%, -50%)',
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: '#FFC800',
+                              boxShadow: '0 0 0 1.5px rgba(0,0,0,0.7)',
+                            }}
+                          />
+                        )}
+                        {status === 'loading' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                            <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
 
-                      {status === 'loading' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
-                        </div>
-                      )}
-                      {status === 'error' && (
-                        <div className="absolute top-0.5 right-0.5 bg-red-500 rounded-full p-0.5">
-                          <AlertCircle className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-                      {status === 'done' && (
-                        <div className="absolute top-0.5 right-0.5 bg-marshall-gold rounded-full p-0.5">
-                          <Check className="w-2.5 h-2.5 text-black" />
-                        </div>
-                      )}
+                      {/* Debug info + controls */}
+                      <div className="flex-1 min-w-0">
+                        {alignment ? (
+                          <div className="text-[10px] tabular-nums leading-tight space-y-0.5">
+                            <div className="text-white/60">
+                              cx <span className="text-white/90">{alignment.cx.toFixed(3)}</span>
+                              {' '}cy <span className="text-white/90">{alignment.cy.toFixed(3)}</span>
+                            </div>
+                            <div className="text-white/40">
+                              {alignment.angle != null
+                                ? <>angle <span className="text-white/70">{alignment.angle.toFixed(1)}°</span> </>
+                                : <span className="text-red-400/70">no angle </span>}
+                              {alignment.logoWidth != null
+                                ? <>lw <span className="text-white/70">{(alignment.logoWidth * 100).toFixed(1)}%</span></>
+                                : <span className="text-red-400/70">no lw</span>}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-white/30">Not detected</span>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          title="Re-detect logo"
+                          onClick={() => detectOne(url)}
+                          disabled={status === 'loading'}
+                          className="p-1 rounded bg-white/5 hover:bg-marshall-gold/20 text-white/50 hover:text-marshall-gold disabled:opacity-30 transition"
+                        >
+                          {status === 'loading' ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : status === 'done' ? (
+                            <Check className="w-3 h-3 text-marshall-gold" />
+                          ) : status === 'error' ? (
+                            <AlertCircle className="w-3 h-3 text-red-400" />
+                          ) : (
+                            <Sparkles className="w-3 h-3" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          title={isHidden ? 'Show' : 'Hide'}
+                          onClick={() => toggleHidden(url)}
+                          className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition"
+                        >
+                          {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-[10px] text-white/40 mt-2">
-                Auto-detect sets a center point on each photo. Click any photo to correct it manually.
+              <p className="text-[10px] text-white/30 mt-2">
+                Klicka ✦ på en bild för att köra om detektionen. Klicka på thumbnails för att justera manuellt.
               </p>
             </section>
           )}
