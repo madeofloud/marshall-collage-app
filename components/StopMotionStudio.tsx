@@ -149,11 +149,27 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   };
 
   // Click on the image to set the product center point.
+  // Letterbox-aware: object-contain may leave margins, so map the click from the
+  // element box onto the actual image content using its natural aspect ratio.
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!activeAlignImage) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) / rect.width;
-    const cy = (e.clientY - rect.top) / rect.height;
+    const img = e.currentTarget;
+    const rect = img.getBoundingClientRect();
+    const natW = img.naturalWidth || 1;
+    const natH = img.naturalHeight || 1;
+
+    // Size of the rendered image content inside the element box (object-contain).
+    const scale = Math.min(rect.width / natW, rect.height / natH);
+    const contentW = natW * scale;
+    const contentH = natH * scale;
+    const offsetX = (rect.width - contentW) / 2;
+    const offsetY = (rect.height - contentH) / 2;
+
+    const px = e.clientX - rect.left - offsetX;
+    const py = e.clientY - rect.top - offsetY;
+    const cx = px / contentW;
+    const cy = py / contentH;
+
     setAlignments((prev) => {
       const existing = prev[activeAlignImage];
       return {
@@ -161,7 +177,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         [activeAlignImage]: {
           cx: Math.max(0, Math.min(1, cx)),
           cy: Math.max(0, Math.min(1, cy)),
-          aspect: existing?.aspect ?? 1,
+          aspect: existing?.aspect ?? natW / natH,
         },
       };
     });
@@ -176,12 +192,15 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         {activeAlignImage ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-4">
             <div className="relative max-w-full max-h-[80%] flex items-center justify-center">
-              <div className="relative inline-block cursor-crosshair">
+              <div
+                className="relative cursor-crosshair max-w-full max-h-[70vh]"
+                style={{ aspectRatio: String(activeAlignment?.aspect ?? 1) }}
+              >
                 <img
                   ref={imgRef}
                   src={activeAlignImage}
                   alt=""
-                  className="max-w-full max-h-[70vh] object-contain block select-none"
+                  className="w-full h-full object-contain block select-none"
                   draggable={false}
                   onClick={handleImageClick}
                 />
