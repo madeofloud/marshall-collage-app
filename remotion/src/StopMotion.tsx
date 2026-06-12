@@ -14,17 +14,33 @@ function circularDistance(a: number, b: number, total: number): number {
 }
 
 function computeImageLayout(a: Alignment, targetSize: number, W: number, H: number) {
-  // Clamp box size so the image never scales beyond ~4× the canvas height.
-  const safeH = Math.max(a.h, targetSize / 4);
-  const safeW = Math.max(a.w, targetSize / 4);
-  const effectiveA = { ...a, h: safeH, w: safeW };
-  const displayedImageHeight = (targetSize * H) / effectiveA.h;
-  const displayedImageWidth = displayedImageHeight * effectiveA.aspect;
-  // Center is computed from the ORIGINAL (un-clamped) box so the anchor stays consistent.
+  // Spec:
+  //  1. Each image is scaled so the product box has a uniform size on canvas
+  //     (box height -> targetSize * canvas height). The scale is the same on
+  //     both axes, so the product keeps its proportions; because the box is
+  //     drawn tightly around the same product in every photo, the product ends
+  //     up the SAME size in every frame.
+  //  2. Each image is then translated so the box CENTER sits exactly on the
+  //     canvas center (W/2, H/2).
+  //
+  // A tiny floor on box height only guards against divide-by-zero / runaway
+  // zoom for a degenerate (near-zero) box; it sits far below any real box so it
+  // never alters normal size-matching.
+  const aspect = a.aspect > 0 ? a.aspect : 1;
+  const boxH = Math.max(a.h, 0.02);
+
+  // Scale: make the box height equal to targetSize of the canvas height.
+  const displayedImageHeight = (targetSize * H) / boxH;
+  const displayedImageWidth = displayedImageHeight * aspect;
+
+  // Box center in displayed-image pixels.
   const cx = (a.x + a.w / 2) * displayedImageWidth;
   const cy = (a.y + a.h / 2) * displayedImageHeight;
+
+  // Translate so the box center lands on the canvas center.
   const left = W / 2 - cx;
   const top = H / 2 - cy;
+
   return { left, top, width: displayedImageWidth, height: displayedImageHeight };
 }
 
