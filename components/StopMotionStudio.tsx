@@ -175,14 +175,6 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   className="max-w-full max-h-[70vh] object-contain block select-none"
                   draggable={false}
                 />
-                {/* Fixed crosshair at image center = canvas center */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-                    <div style={{ width: 32, height: 2, background: 'rgba(255,200,0,0.8)', position: 'absolute', top: -1, left: -16 }} />
-                    <div style={{ width: 2, height: 32, background: 'rgba(255,200,0,0.8)', position: 'absolute', left: -1, top: -16 }} />
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,200,0,0.9)', position: 'absolute', top: -3, left: -3 }} />
-                  </div>
-                </div>
                 <AlignmentBox
                   value={{
                     x: activeAlignment.x,
@@ -195,7 +187,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
               </div>
             </div>
             <p className="text-xs text-white/40">
-              Drag the box so its <span className="text-marshall-gold/70">center dot</span> aligns with the <span className="text-marshall-gold/70">crosshair</span> — that point lands at canvas center
+              Draw a tight box around the product. Its <span className="text-marshall-gold/70">center</span> is automatically locked to the canvas center in the animation.
             </p>
             <button
               type="button"

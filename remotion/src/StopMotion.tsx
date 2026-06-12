@@ -72,33 +72,25 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
         const { imgW, imgH, boxCenterX, boxCenterY } = computeLayout(a, targetSize, H);
 
+        // Position the image so the box center lands exactly on canvas center.
+        // (left = W/2 - boxCenterX means: the point boxCenterX into the image
+        // sits at W/2.) Direct positioning — proven to render reliably.
+        const imgLeft = W / 2 - boxCenterX;
+        const imgTop = H / 2 - boxCenterY;
+
         return (
           <React.Fragment key={url}>
-            {/*
-              Anchor at canvas center. Image is shifted so its box-center
-              coincides with this anchor — guaranteeing box center = canvas center.
-            */}
-            <div
+            <img
+              src={url}
               style={{
                 position: 'absolute',
-                left: W / 2,
-                top: H / 2,
-                width: 0,
-                height: 0,
+                left: imgLeft,
+                top: imgTop,
+                width: imgW,
+                height: imgH,
+                opacity,
               }}
-            >
-              <img
-                src={url}
-                style={{
-                  position: 'absolute',
-                  left: -boxCenterX,
-                  top: -boxCenterY,
-                  width: imgW,
-                  height: imgH,
-                  opacity,
-                }}
-              />
-            </div>
+            />
 
             {/* Debug: box outline — its center is always at canvas center */}
             {showCenter && opacity > 0.5 && (
