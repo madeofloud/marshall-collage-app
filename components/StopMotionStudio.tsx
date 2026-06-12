@@ -113,7 +113,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         body: JSON.stringify({ imageUrl: url }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.found || !data.box) {
+      if (!res.ok || !data.found) {
         setAlignments((prev) => {
           if (prev[url]) return prev;
           return { ...prev, [url]: { cx: 0.5, cy: 0.5, aspect } };
@@ -121,10 +121,24 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         setDetectStatus((s) => ({ ...s, [url]: 'error' }));
         return false;
       }
-      const { x, y, w, h } = data.box as { x: number; y: number; w: number; h: number };
-      // Convert bounding box to center point.
-      const cx = Math.max(0, Math.min(1, x + w / 2));
-      const cy = Math.max(0, Math.min(1, y + h / 2));
+      // API returns cx/cy directly (new format) or a box (old format).
+      let cx: number;
+      let cy: number;
+      if (typeof data.cx === 'number' && typeof data.cy === 'number') {
+        cx = Math.max(0, Math.min(1, data.cx));
+        cy = Math.max(0, Math.min(1, data.cy));
+      } else if (data.box) {
+        const b = data.box as { x: number; y: number; w: number; h: number };
+        cx = Math.max(0, Math.min(1, b.x + b.w / 2));
+        cy = Math.max(0, Math.min(1, b.y + b.h / 2));
+      } else {
+        setAlignments((prev) => {
+          if (prev[url]) return prev;
+          return { ...prev, [url]: { cx: 0.5, cy: 0.5, aspect } };
+        });
+        setDetectStatus((s) => ({ ...s, [url]: 'error' }));
+        return false;
+      }
       setAlignments((prev) => ({ ...prev, [url]: { cx, cy, aspect } }));
       setDetectStatus((s) => ({ ...s, [url]: 'done' }));
       return true;
