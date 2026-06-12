@@ -5,27 +5,34 @@ import React, { useState, useEffect, useRef } from 'react';
 type Session = {
   id: string;
   name: string;
+  kind: string;
   url: string;
   updatedAt: string;
 };
 
-type SessionData = {
-  images: string[];
-  background: string;
-  rotationSpeed: number;
-  grainAmount: number;
-  panelOverrides: Record<string, unknown>;
-  format: string;
-  sizeTier: string;
-  codec: string;
-};
+type SessionData = Record<string, unknown>;
 
 type Props = {
   currentData: SessionData;
   onLoad: (data: SessionData) => void;
+  // Which workspace these sessions belong to. Sessions are filtered by kind so
+  // 360° Collage and Stop Motion keep separate project lists.
+  kind: 'collage' | 'stopmotion';
+  // Reports the active (loaded/saved) session name so the header can show it.
+  onActiveChange?: (name: string | null) => void;
 };
 
-export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
+// Parse "<kind>__<slug>__<timestamp>" ids, with a fallback for legacy
+// "<slug>_<timestamp>" ids (which are always collage).
+function parseId(id: string): { kind: string; name: string } {
+  const parts = id.split('__');
+  if (parts.length >= 3 && (parts[0] === 'collage' || parts[0] === 'stopmotion')) {
+    return { kind: parts[0], name: parts.slice(1, -1).join('__').replace(/_/g, ' ') };
+  }
+  return { kind: 'collage', name: id.replace(/_\d+$/, '').replace(/_/g, ' ') || id };
+}
+
+export const SessionManager: React.FC<Props> = ({ currentData, onLoad, kind, onActiveChange }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -48,8 +55,19 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
 
   const fetchSessions = async () => {
     const res = await fetch('/api/sessions');
-    const data = await res.json();
-    setSessions(data);
+    const data = (await res.json()) as { id: string; url: string; updatedAt: string }[];
+    const parsed: Session[] = data
+      .map((b) => {
+        const { kind: k, name } = parseId(b.id);
+        return { id: b.id, name, kind: k, url: b.url, updatedAt: b.updatedAt };
+      })
+      .filter((s) => s.kind === kind);
+    setSessions(parsed);
+  };
+
+  const setActive = (s: Session | null) => {
+    setActiveSession(s);
+    onActiveChange?.(s ? s.name : null);
   };
 
   const handleSave = async () => {
@@ -58,11 +76,11 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), data: currentData }),
+      body: JSON.stringify({ name: newName.trim(), data: currentData, kind }),
     });
     const created = await res.json().catch(() => null);
     if (created?.id) {
-      setActiveSession({ id: created.id, name: newName.trim(), url: created.url, updatedAt: new Date().toISOString() });
+      setActive({ id: created.id, name: newName.trim(), kind, url: created.url, updatedAt: new Date().toISOString() });
     }
     setNewName('');
     await fetchSessions();
@@ -86,7 +104,7 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
     const res = await fetch(session.url);
     const data = await res.json();
     onLoad(data);
-    setActiveSession(session);
+    setActive(session);
     setOpen(false);
   };
 
@@ -97,7 +115,7 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: session.id, url: session.url }),
     });
-    if (activeSession?.id === session.id) setActiveSession(null);
+    if (activeSession?.id === session.id) setActive(null);
     setSessions((s) => s.filter((x) => x.id !== session.id));
   };
 

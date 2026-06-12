@@ -16,8 +16,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { name, data } = body as { name: string; data: unknown };
-  const id = name.trim().replace(/\s+/g, '_').toLowerCase() + '_' + Date.now();
+  const { name, data, kind } = body as { name: string; data: unknown; kind?: string };
+  const slug = name.trim().replace(/\s+/g, '_').toLowerCase();
+  // id format: "<kind>__<slug>__<timestamp>" so collage and stop-motion
+  // sessions can be told apart from the id alone.
+  const id = `${kind || 'collage'}__${slug}__${Date.now()}`;
   const blob = await put(`sessions/${id}.json`, JSON.stringify(data), {
     access: 'public',
     addRandomSuffix: false,

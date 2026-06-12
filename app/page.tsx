@@ -11,6 +11,7 @@ import {
   type AspectFormat,
   type SizeTier,
 } from '@/remotion/src/types';
+import { type Alignment } from '@/remotion/src/stopMotionTypes';
 import { generatePanels } from '@/remotion/src/generation';
 
 export default function HomePage() {
@@ -27,6 +28,18 @@ export default function HomePage() {
   const [sizeTier, setSizeTier] = useState<SizeTier>('medium');
   const [codec, setCodec] = useState<'h264' | 'prores'>('h264');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Stop Motion workspace state (separate project from the collage).
+  const [smImages, setSmImages] = useState<string[]>([]);
+  const [smAlignments, setSmAlignments] = useState<Record<string, Alignment>>({});
+  const [smFramesPerImage, setSmFramesPerImage] = useState(12);
+  const [smTransition, setSmTransition] = useState<'cut' | 'crossfade'>('cut');
+  const [smTargetSize, setSmTargetSize] = useState(0.5);
+  const [smBackground, setSmBackground] = useState('#121212');
+
+  // Active (loaded/saved) session names shown in the header, per workspace.
+  const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
+  const [activeStopMotionName, setActiveStopMotionName] = useState<string | null>(null);
 
   const selectedOverride = useMemo<PanelOverride | null>(
     () => (selectedPanelId ? panelOverrides[selectedPanelId] ?? null : null),
@@ -117,26 +130,35 @@ export default function HomePage() {
     });
   };
 
-  const handleLoadSession = (data: {
-    images: string[];
-    background: string;
-    rotationSpeed: number;
-    grainAmount: number;
-    panelOverrides: Record<string, unknown>;
-    format: string;
-    sizeTier: string;
-    codec: string;
-  }) => {
-    setImages(data.images ?? []);
-    setBackground(data.background ?? '#121212');
-    setRotationSpeed(data.rotationSpeed ?? 60);
-    setGrainAmount(data.grainAmount ?? 0.8);
-    setPanelOverrides((data.panelOverrides ?? {}) as PanelOverrides);
-    setFormat((data.format ?? '1x1') as AspectFormat);
-    setSizeTier((data.sizeTier ?? 'medium') as SizeTier);
-    setCodec((data.codec ?? 'h264') as 'h264' | 'prores');
-    setBackgroundImage((data as { backgroundImage?: string | null }).backgroundImage ?? null);
+  const handleLoadSession = (data: Record<string, unknown>) => {
+    setImages((data.images as string[]) ?? []);
+    setBackground((data.background as string) ?? '#121212');
+    setRotationSpeed((data.rotationSpeed as number) ?? 60);
+    setGrainAmount((data.grainAmount as number) ?? 0.8);
+    setPanelOverrides((data.panelOverrides as PanelOverrides) ?? {});
+    setFormat((data.format as AspectFormat) ?? '1x1');
+    setSizeTier((data.sizeTier as SizeTier) ?? 'medium');
+    setCodec((data.codec as 'h264' | 'prores') ?? 'h264');
+    setBackgroundImage((data.backgroundImage as string | null) ?? null);
     setSelectedPanelId(null);
+  };
+
+  const handleLoadStopMotion = (data: Record<string, unknown>) => {
+    setSmImages((data.images as string[]) ?? []);
+    setSmAlignments((data.alignments as Record<string, Alignment>) ?? {});
+    setSmFramesPerImage((data.framesPerImage as number) ?? 12);
+    setSmTransition((data.transition as 'cut' | 'crossfade') ?? 'cut');
+    setSmTargetSize((data.targetSize as number) ?? 0.5);
+    setSmBackground((data.background as string) ?? '#121212');
+  };
+
+  const stopMotionSessionData = {
+    images: smImages,
+    alignments: smAlignments,
+    framesPerImage: smFramesPerImage,
+    transition: smTransition,
+    targetSize: smTargetSize,
+    background: smBackground,
   };
 
   const handleExport = async () => {
@@ -192,7 +214,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">1.2</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">1.3</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -215,9 +237,27 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+          {/* Active project name for the current workspace */}
+          <span className="text-xs text-white/40 truncate max-w-[180px]">
+            {(mode === 'collage' ? activeCollageName : activeStopMotionName)
+              ? `· ${mode === 'collage' ? activeCollageName : activeStopMotionName}`
+              : '· Untitled'}
+          </span>
         </div>
-        {mode === 'collage' && (
-          <SessionManager currentData={currentSessionData} onLoad={handleLoadSession} />
+        {mode === 'collage' ? (
+          <SessionManager
+            currentData={currentSessionData}
+            onLoad={handleLoadSession}
+            kind="collage"
+            onActiveChange={setActiveCollageName}
+          />
+        ) : (
+          <SessionManager
+            currentData={stopMotionSessionData}
+            onLoad={handleLoadStopMotion}
+            kind="stopmotion"
+            onActiveChange={setActiveStopMotionName}
+          />
         )}
       </header>
 
@@ -268,7 +308,20 @@ export default function HomePage() {
           />
         </>
       ) : (
-        <StopMotionStudio />
+        <StopMotionStudio
+          images={smImages}
+          setImages={setSmImages}
+          alignments={smAlignments}
+          setAlignments={setSmAlignments}
+          framesPerImage={smFramesPerImage}
+          setFramesPerImage={setSmFramesPerImage}
+          transition={smTransition}
+          setTransition={setSmTransition}
+          targetSize={smTargetSize}
+          setTargetSize={setSmTargetSize}
+          background={smBackground}
+          setBackground={setSmBackground}
+        />
       )}
     </main>
   );

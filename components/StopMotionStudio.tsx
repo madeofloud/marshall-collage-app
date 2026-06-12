@@ -53,13 +53,35 @@ const SliderRow = ({
   </div>
 );
 
-export const StopMotionStudio: React.FC = () => {
-  const [images, setImages] = useState<string[]>([]);
-  const [alignments, setAlignments] = useState<Record<string, Alignment>>({});
-  const [framesPerImage, setFramesPerImage] = useState(12);
-  const [transition, setTransition] = useState<'cut' | 'crossfade'>('cut');
-  const [targetSize, setTargetSize] = useState(0.5);
-  const [background, setBackground] = useState('#121212');
+type StopMotionStudioProps = {
+  images: string[];
+  setImages: React.Dispatch<React.SetStateAction<string[]>>;
+  alignments: Record<string, Alignment>;
+  setAlignments: React.Dispatch<React.SetStateAction<Record<string, Alignment>>>;
+  framesPerImage: number;
+  setFramesPerImage: React.Dispatch<React.SetStateAction<number>>;
+  transition: 'cut' | 'crossfade';
+  setTransition: React.Dispatch<React.SetStateAction<'cut' | 'crossfade'>>;
+  targetSize: number;
+  setTargetSize: React.Dispatch<React.SetStateAction<number>>;
+  background: string;
+  setBackground: React.Dispatch<React.SetStateAction<string>>;
+};
+
+export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
+  images,
+  setImages,
+  alignments,
+  setAlignments,
+  framesPerImage,
+  setFramesPerImage,
+  transition,
+  setTransition,
+  targetSize,
+  setTargetSize,
+  background,
+  setBackground,
+}) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
 
   // Auto-detection state keyed by image URL: 'loading' | 'done' | 'error'
