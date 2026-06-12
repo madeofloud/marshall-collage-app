@@ -214,7 +214,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">1.3</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">1.4</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -237,28 +237,32 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-          {/* Active project name for the current workspace */}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Active project name, shown directly next to the Sessions button */}
           <span className="text-xs text-white/40 truncate max-w-[180px]">
             {(mode === 'collage' ? activeCollageName : activeStopMotionName)
-              ? `· ${mode === 'collage' ? activeCollageName : activeStopMotionName}`
-              : '· Untitled'}
+              ? mode === 'collage'
+                ? activeCollageName
+                : activeStopMotionName
+              : 'Untitled'}
           </span>
+          {mode === 'collage' ? (
+            <SessionManager
+              currentData={currentSessionData}
+              onLoad={handleLoadSession}
+              kind="collage"
+              onActiveChange={setActiveCollageName}
+            />
+          ) : (
+            <SessionManager
+              currentData={stopMotionSessionData}
+              onLoad={handleLoadStopMotion}
+              kind="stopmotion"
+              onActiveChange={setActiveStopMotionName}
+            />
+          )}
         </div>
-        {mode === 'collage' ? (
-          <SessionManager
-            currentData={currentSessionData}
-            onLoad={handleLoadSession}
-            kind="collage"
-            onActiveChange={setActiveCollageName}
-          />
-        ) : (
-          <SessionManager
-            currentData={stopMotionSessionData}
-            onLoad={handleLoadStopMotion}
-            kind="stopmotion"
-            onActiveChange={setActiveStopMotionName}
-          />
-        )}
       </header>
 
       {mode === 'collage' ? (
