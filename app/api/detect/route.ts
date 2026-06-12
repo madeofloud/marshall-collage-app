@@ -37,28 +37,32 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey });
 
   const prompt = [
-    'In this photo a person is wearing dark over-ear Marshall headphones. Your',
-    'ONLY task is to locate the single round EAR CUP of the headphones that',
-    'faces the camera — the black padded circular disc with the brass/gold',
-    'cursive "Marshall" logo written across it.',
+    'Each photo contains exactly ONE Marshall-branded audio product. It is the',
+    'hero object. Your ONLY task is to return a tight bounding box around that',
+    'single Marshall product.',
     '',
-    'Return a tight bounding box around JUST that round ear cup disc.',
+    'The product is identified by the gold/brass cursive "Marshall" logo and is',
+    'ONE of these two forms:',
+    '  • a boxy guitar-amp-style SPEAKER (a rectangular box with a textured',
+    '    fret-cloth grille on the front and control knobs on top), OR',
+    '  • over-ear HEADPHONES (two round padded ear cups on a headband).',
+    'Box the WHOLE visible product device (the entire speaker box, or the whole',
+    'headphones), not just a sub-part.',
     '',
-    'CRITICAL — do NOT box any of these (they are common mistakes):',
-    '  • the face, cheek, nose, mouth, or eyes',
-    '  • sunglasses or glasses',
-    '  • hair or the top headband',
-    '  • the whole head',
-    'The target is ONLY the dark circular speaker cup with the Marshall script.',
-    'It is usually located over the ear, to the side of the face. If the photo',
-    'shows a Marshall speaker instead of headphones, box the speaker front face.',
+    'CRITICAL — these are NOT the product. Never box them, even if they are big',
+    'and in the foreground:',
+    '  • the person, their face, ear, hair, hands, or body',
+    '  • sunglasses, glasses, jewellery, clothing',
+    '  • plants, furniture, walls, vinyl records, turntables, books, lamps',
+    'If a person fills most of the frame and the Marshall product is small or in',
+    'the background, still box the small Marshall product — NOT the person.',
     '',
     'Use a coordinate system where the top-left of the image is (0, 0) and the',
     'bottom-right is (1000, 1000).',
     '',
     'Respond with ONLY a JSON object, no prose, in exactly this shape:',
-    '{"found": true, "x0": <left>, "y0": <top>, "x1": <right>, "y1": <bottom>}',
-    'If no Marshall ear cup or product is visible, respond {"found": false}.',
+    '{"found": true, "label": "<speaker|headphones>", "x0": <left>, "y0": <top>, "x1": <right>, "y1": <bottom>}',
+    'If no Marshall product is visible at all, respond {"found": false}.',
   ].join('\n');
 
   try {
@@ -93,6 +97,7 @@ export async function POST(request: Request) {
 
     const parsed = JSON.parse(jsonMatch[0]) as {
       found?: boolean;
+      label?: string;
       x0?: number;
       y0?: number;
       x1?: number;
@@ -123,7 +128,7 @@ export async function POST(request: Request) {
     // symmetric around the true anchor center is what guarantees the product
     // lands exactly on the canvas center. Coordinates outside 0..1 are fine;
     // they just mean part of the padding falls outside the image.
-    const PAD = 0.12;
+    const PAD = 0.05;
     const box: DetectBox = {
       x: rawX - PAD,
       y: rawY - PAD,

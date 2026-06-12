@@ -251,20 +251,29 @@ export const StopMotionStudio: React.FC = () => {
                       }`}
                       onClick={() => setActiveAlignImage(url)}
                     >
-                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <img src={url} alt="" className="w-full h-full object-contain" />
 
-                      {/* Detected product box overlay */}
-                      {alignment && status !== 'error' && (
-                        <div
-                          className="absolute border border-marshall-gold/80 pointer-events-none"
-                          style={{
-                            left: `${alignment.x * 100}%`,
-                            top: `${alignment.y * 100}%`,
-                            width: `${alignment.w * 100}%`,
-                            height: `${alignment.h * 100}%`,
-                          }}
-                        />
-                      )}
+                      {/* Detected product box overlay — mapped onto the
+                          object-contain (letterboxed) image inside the square cell */}
+                      {alignment && status !== 'error' && (() => {
+                        const r = alignment.aspect || 1;
+                        // Fraction of the square cell the image occupies + its offset.
+                        const fw = r >= 1 ? 1 : r;        // image width fraction
+                        const fh = r >= 1 ? 1 / r : 1;    // image height fraction
+                        const ox = (1 - fw) / 2;           // horizontal letterbox
+                        const oy = (1 - fh) / 2;           // vertical letterbox
+                        return (
+                          <div
+                            className="absolute border border-marshall-gold/80 pointer-events-none"
+                            style={{
+                              left: `${(ox + alignment.x * fw) * 100}%`,
+                              top: `${(oy + alignment.y * fh) * 100}%`,
+                              width: `${alignment.w * fw * 100}%`,
+                              height: `${alignment.h * fh * 100}%`,
+                            }}
+                          />
+                        );
+                      })()}
 
                       {status === 'loading' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
