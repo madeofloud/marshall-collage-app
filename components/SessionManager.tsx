@@ -30,6 +30,8 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newName, setNewName] = useState('');
+  // Track the currently loaded session so it can be updated in place.
+  const [activeSession, setActiveSession] = useState<Session | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,12 +55,29 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
   const handleSave = async () => {
     if (!newName.trim()) return;
     setSaving(true);
-    await fetch('/api/sessions', {
+    const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim(), data: currentData }),
     });
+    const created = await res.json().catch(() => null);
+    if (created?.id) {
+      setActiveSession({ id: created.id, name: newName.trim(), url: created.url, updatedAt: new Date().toISOString() });
+    }
     setNewName('');
+    await fetchSessions();
+    setSaving(false);
+  };
+
+  // Overwrite the currently loaded session in place.
+  const handleUpdate = async () => {
+    if (!activeSession) return;
+    setSaving(true);
+    await fetch('/api/sessions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: activeSession.id, data: currentData }),
+    });
     await fetchSessions();
     setSaving(false);
   };
@@ -67,6 +86,7 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
     const res = await fetch(session.url);
     const data = await res.json();
     onLoad(data);
+    setActiveSession(session);
     setOpen(false);
   };
 
@@ -77,6 +97,7 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: session.id, url: session.url }),
     });
+    if (activeSession?.id === session.id) setActiveSession(null);
     setSessions((s) => s.filter((x) => x.id !== session.id));
   };
 
@@ -92,9 +113,26 @@ export const SessionManager: React.FC<Props> = ({ currentData, onLoad }) => {
 
       {open && (
         <div className="absolute top-8 right-0 w-72 bg-neutral-900 border border-white/10 rounded-lg shadow-xl z-50 p-4 space-y-4">
+          {/* Update active session */}
+          {activeSession && (
+            <div>
+              <p className="text-xs text-white/50 mb-2 font-semibold uppercase tracking-wider">Current session</p>
+              <button
+                type="button"
+                onClick={handleUpdate}
+                disabled={saving}
+                className="w-full px-3 py-1.5 bg-marshall-gold text-black text-xs font-semibold rounded disabled:opacity-30"
+              >
+                {saving ? '...' : `Update “${activeSession.name}”`}
+              </button>
+            </div>
+          )}
+
           {/* Save */}
           <div>
-            <p className="text-xs text-white/50 mb-2 font-semibold uppercase tracking-wider">Save current</p>
+            <p className="text-xs text-white/50 mb-2 font-semibold uppercase tracking-wider">
+              {activeSession ? 'Save as new' : 'Save current'}
+            </p>
             <div className="flex gap-2">
               <input
                 type="text"

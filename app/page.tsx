@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CollagePreview } from '@/components/CollagePreview';
 import { ControlPanel } from '@/components/ControlPanel';
 import { SessionManager } from '@/components/SessionManager';
@@ -33,10 +33,30 @@ export default function HomePage() {
     [selectedPanelId, panelOverrides]
   );
 
+  // Undo history for panel overrides (Cmd+Z / Ctrl+Z)
+  const undoStack = useRef<PanelOverrides[]>([]);
+
   const handleUpdatePanelOverride = (override: PanelOverride) => {
     if (!selectedPanelId) return;
-    setPanelOverrides({ ...panelOverrides, [selectedPanelId]: override });
+    setPanelOverrides((prev) => {
+      undoStack.current.push({ ...prev });
+      return { ...prev, [selectedPanelId]: override };
+    });
   };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        const prev = undoStack.current.pop();
+        if (prev !== undefined) setPanelOverrides(prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const handleSelectImage = (url: string) => {
     const panel = generatePanels(images).find((p) => p.image === url);
@@ -89,9 +109,12 @@ export default function HomePage() {
 
   const handleToggleHidden = () => {
     if (!selectedPanelId) return;
-    const current = panelOverrides[selectedPanelId];
-    if (!current) return;
-    setPanelOverrides({ ...panelOverrides, [selectedPanelId]: { ...current, hidden: !current.hidden } });
+    setPanelOverrides((prev) => {
+      const current = prev[selectedPanelId];
+      if (!current) return prev;
+      undoStack.current.push({ ...prev });
+      return { ...prev, [selectedPanelId]: { ...current, hidden: !current.hidden } };
+    });
   };
 
   const handleLoadSession = (data: {
@@ -168,7 +191,9 @@ export default function HomePage() {
         } px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between`}
       >
         <div className="flex items-center gap-4">
-          <h1 className="text-sm font-semibold tracking-wide">Marshall Motion Studio</h1>
+          <h1 className="text-sm font-semibold tracking-wide">
+            Marshall Motion Studio <span className="font-normal text-white/50">1.1</span>
+          </h1>
           <div className="flex gap-1">
             {(
               [

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import { EyeOff, Eye, ImagePlus, X, RotateCcw } from 'lucide-react';
 import { ImageUploader } from './ImageUploader';
@@ -66,12 +66,35 @@ const SliderRow = ({
   onChange: (v: number) => void;
   defaultValue?: number;
 }) => {
+  const decimals = step < 1 ? 2 : 0;
+  const [inputText, setInputText] = useState<string | null>(null);
+
+  const commitInput = (raw: string) => {
+    const parsed = parseFloat(raw);
+    if (!Number.isNaN(parsed)) {
+      onChange(Math.max(min, Math.min(max, parsed)));
+    }
+    setInputText(null);
+  };
+
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between text-xs items-center">
         <span className="text-white/70">{label}</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-white/50 tabular-nums">{value.toFixed(step < 1 ? 2 : 0)}</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            className="w-14 text-right bg-transparent text-white/50 tabular-nums focus:text-white focus:outline-none focus:bg-white/10 rounded px-1"
+            value={inputText !== null ? inputText : value.toFixed(decimals)}
+            onChange={(e) => setInputText(e.target.value)}
+            onFocus={(e) => { setInputText(value.toFixed(decimals)); e.target.select(); }}
+            onBlur={(e) => commitInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { commitInput((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur(); }
+              if (e.key === 'Escape') { setInputText(null); (e.target as HTMLInputElement).blur(); }
+            }}
+          />
           {defaultValue !== undefined && (
             <button
               type="button"

@@ -26,6 +26,18 @@ export async function POST(request: Request) {
   return NextResponse.json({ id, url: blob.url });
 }
 
+// Overwrite an existing session in place (keeps the same id/name).
+export async function PUT(request: Request) {
+  const body = await request.json();
+  const { id, data } = body as { id: string; data: unknown };
+  const blob = await put(`sessions/${id}.json`, JSON.stringify(data), {
+    access: 'public',
+    addRandomSuffix: false,
+    token,
+  });
+  return NextResponse.json({ id, url: blob.url });
+}
+
 export async function DELETE(request: Request) {
   const { id, url } = await request.json();
   await del(url, { token });
