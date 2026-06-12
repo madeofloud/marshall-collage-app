@@ -2,10 +2,6 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { Alignment, StopMotionProps } from './stopMotionTypes';
 
-/**
- * Smallest non-negative distance between two frames on a circular timeline of
- * length `total`. Lets the last image crossfade back into the first.
- */
 function circularDistance(a: number, b: number, total: number): number {
   if (total <= 0) return Math.abs(a - b);
   let d = Math.abs(a - b) % total;
@@ -13,35 +9,29 @@ function circularDistance(a: number, b: number, total: number): number {
   return d;
 }
 
-function computeImageLayout(a: Alignment, targetSize: number, W: number, H: number) {
-  // Spec:
-  //  1. Each image is scaled so the product box has a uniform size on canvas
-  //     (box height -> targetSize * canvas height). The scale is the same on
-  //     both axes, so the product keeps its proportions; because the box is
-  //     drawn tightly around the same product in every photo, the product ends
-  //     up the SAME size in every frame.
-  //  2. Each image is then translated so the box CENTER sits exactly on the
-  //     canvas center (W/2, H/2).
-  //
-  // A tiny floor on box height only guards against divide-by-zero / runaway
-  // zoom for a degenerate (near-zero) box; it sits far below any real box so it
-  // never alters normal size-matching.
+/**
+ * Returns the scale needed so the product box height fills targetSize * H,
+ * and the offset (in image pixels) from the image top-left to the box center.
+ *
+ * Rendering:
+ *   - Place a zero-size anchor div exactly at (W/2, H/2) — canvas center.
+ *   - Position the image inside it at left:-boxCenterX, top:-boxCenterY.
+ *   - Result: the box center is guaranteed to be at canvas center regardless
+ *     of any other values.
+ */
+function computeLayout(a: Alignment, targetSize: number, canvasH: number) {
   const aspect = a.aspect > 0 ? a.aspect : 1;
-  const boxH = Math.max(a.h, 0.02);
+  const boxH = Math.max(a.h, 0.02); // floor prevents divide-by-zero only
 
-  // Scale: make the box height equal to targetSize of the canvas height.
-  const displayedImageHeight = (targetSize * H) / boxH;
-  const displayedImageWidth = displayedImageHeight * aspect;
+  // Scale factor: box height → targetSize × canvas height
+  const imgH = (targetSize * canvasH) / boxH;
+  const imgW = imgH * aspect;
 
-  // Box center in displayed-image pixels.
-  const cx = (a.x + a.w / 2) * displayedImageWidth;
-  const cy = (a.y + a.h / 2) * displayedImageHeight;
+  // Distance from image top-left to the box center, in rendered pixels
+  const boxCenterX = (a.x + a.w / 2) * imgW;
+  const boxCenterY = (a.y + a.h / 2) * imgH;
 
-  // Translate so the box center lands on the canvas center.
-  const left = W / 2 - cx;
-  const top = H / 2 - cy;
-
-  return { left, top, width: displayedImageWidth, height: displayedImageHeight };
+  return { imgW, imgH, boxCenterX, boxCenterY };
 }
 
 export const StopMotion: React.FC<StopMotionProps> = ({
@@ -66,7 +56,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
     <AbsoluteFill style={{ background, overflow: 'hidden' }}>
       {images.map((url, i) => {
         const a = alignments[url];
-        if (!a) return null; // skip un-aligned images
+        if (!a) return null;
 
         let opacity: number;
         if (transition === 'cut') {
@@ -80,35 +70,45 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
         if (opacity <= 0) return null;
 
-        const layout = computeImageLayout(a, targetSize, W, H);
-
-        // Where the detected product box maps onto the canvas (for debugging overlay)
-        const boxLeft = layout.left + a.x * layout.width;
-        const boxTop = layout.top + a.y * layout.height;
-        const boxW = a.w * layout.width;
-        const boxH = a.h * layout.height;
+        const { imgW, imgH, boxCenterX, boxCenterY } = computeLayout(a, targetSize, H);
 
         return (
           <React.Fragment key={url}>
-            <img
-              src={url}
+            {/*
+              Anchor at canvas center. Image is shifted so its box-center
+              coincides with this anchor — guaranteeing box center = canvas center.
+            */}
+            <div
               style={{
                 position: 'absolute',
-                left: layout.left,
-                top: layout.top,
-                width: layout.width,
-                height: layout.height,
-                opacity,
+                left: W / 2,
+                top: H / 2,
+                width: 0,
+                height: 0,
               }}
-            />
+            >
+              <img
+                src={url}
+                style={{
+                  position: 'absolute',
+                  left: -boxCenterX,
+                  top: -boxCenterY,
+                  width: imgW,
+                  height: imgH,
+                  opacity,
+                }}
+              />
+            </div>
+
+            {/* Debug: box outline — its center is always at canvas center */}
             {showCenter && opacity > 0.5 && (
               <div
                 style={{
                   position: 'absolute',
-                  left: boxLeft,
-                  top: boxTop,
-                  width: boxW,
-                  height: boxH,
+                  left: W / 2 - (a.w / 2) * imgW,
+                  top: H / 2 - (a.h / 2) * imgH,
+                  width: a.w * imgW,
+                  height: a.h * imgH,
                   border: '2px solid rgba(255,200,0,0.6)',
                   pointerEvents: 'none',
                 }}
@@ -118,7 +118,6 @@ export const StopMotion: React.FC<StopMotionProps> = ({
         );
       })}
 
-      {/* Centre crosshair – visible in preview to confirm the lock point */}
       {showCenter && (
         <>
           <div style={{
@@ -127,7 +126,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
             top: H / 2 - 1,
             width: crosshairSize,
             height: 2,
-            background: 'rgba(255,200,0,0.7)',
+            background: 'rgba(255,200,0,0.9)',
           }} />
           <div style={{
             position: 'absolute',
@@ -135,7 +134,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
             top: H / 2 - crosshairSize / 2,
             width: 2,
             height: crosshairSize,
-            background: 'rgba(255,200,0,0.7)',
+            background: 'rgba(255,200,0,0.9)',
           }} />
         </>
       )}
