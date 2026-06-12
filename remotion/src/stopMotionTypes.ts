@@ -1,13 +1,15 @@
 export type Alignment = {
-  // Product center point, normalized 0..1 of image dimensions.
-  // This is the ONLY thing that matters for centering: the point the user
-  // clicks on the product is locked to the canvas center in the animation.
+  // Logo center point, normalized 0..1 of image dimensions.
   cx: number;
   cy: number;
-  aspect: number; // image natural width / height
+  aspect: number;       // image natural width / height
+  angle?: number;       // degrees the Marshall script tilts from horizontal
+                        // (positive = clockwise). Used to rotate image so logo
+                        // is always horizontal on canvas.
+  logoWidth?: number;   // width of the "Marshall" script as fraction of image
+                        // width. Used to normalize size across all images.
 
-  // Legacy bounding-box fields kept for backward compat with saved sessions.
-  // Not used for rendering — only cx/cy drive position.
+  // Legacy bounding-box fields — kept for backward compat, not used in rendering.
   x?: number;
   y?: number;
   w?: number;
@@ -16,10 +18,11 @@ export type Alignment = {
 
 export type StopMotionProps = {
   images: string[];
-  alignments: Record<string, Alignment>; // keyed by image URL
+  alignments: Record<string, Alignment>;
   framesPerImage: number;
   transition: 'cut' | 'crossfade';
-  targetSize: number; // displayed image height as fraction of canvas height
+  targetSize: number; // logo width as fraction of canvas width (when logoWidth known)
+                      // or image height as fraction of canvas height (legacy)
   background: string;
   showCenter?: boolean;
 };

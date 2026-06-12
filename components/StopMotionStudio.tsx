@@ -136,16 +136,11 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         setDetectStatus((s) => ({ ...s, [url]: 'error' }));
         return false;
       }
-      // API returns cx/cy directly (new format) or a box (old format).
       let cx: number;
       let cy: number;
       if (typeof data.cx === 'number' && typeof data.cy === 'number') {
         cx = Math.max(0, Math.min(1, data.cx));
         cy = Math.max(0, Math.min(1, data.cy));
-      } else if (data.box) {
-        const b = data.box as { x: number; y: number; w: number; h: number };
-        cx = Math.max(0, Math.min(1, b.x + b.w / 2));
-        cy = Math.max(0, Math.min(1, b.y + b.h / 2));
       } else {
         setAlignments((prev) => {
           if (prev[url]) return prev;
@@ -154,7 +149,9 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         setDetectStatus((s) => ({ ...s, [url]: 'error' }));
         return false;
       }
-      setAlignments((prev) => ({ ...prev, [url]: { cx, cy, aspect } }));
+      const angle = typeof data.angle === 'number' ? data.angle : undefined;
+      const logoWidth = typeof data.logoWidth === 'number' ? data.logoWidth : undefined;
+      setAlignments((prev) => ({ ...prev, [url]: { cx, cy, aspect, angle, logoWidth } }));
       setDetectStatus((s) => ({ ...s, [url]: 'done' }));
       return true;
     } catch {
@@ -204,6 +201,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
       return {
         ...prev,
         [activeAlignImage]: {
+          ...existing,
           cx: Math.max(0, Math.min(1, cx)),
           cy: Math.max(0, Math.min(1, cy)),
           aspect: existing?.aspect ?? natW / natH,

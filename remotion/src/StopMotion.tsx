@@ -59,15 +59,27 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
         const aspect = a.aspect > 0 ? a.aspect : 1;
         const { cx, cy } = getCenterPoint(a);
+        const angle = a.angle ?? 0;
 
-        // Scale: displayed image height = targetSize × canvas height.
-        // (Same factor for every image → global product size controlled by slider.)
-        const imgH = targetSize * H;
-        const imgW = imgH * aspect;
+        // Scale: if logoWidth known, scale so the logo spans targetSize * W pixels.
+        // Otherwise fall back to targetSize * H as image height.
+        let imgW: number, imgH: number;
+        if (a.logoWidth && a.logoWidth > 0) {
+          imgW = (targetSize * W) / a.logoWidth;
+          imgH = imgW / aspect;
+        } else {
+          imgH = targetSize * H;
+          imgW = imgH * aspect;
+        }
 
-        // Position: product center point (cx, cy) locked to canvas center (W/2, H/2).
+        // Position: logo center (cx, cy) locked to canvas center (W/2, H/2).
         const imgLeft = W / 2 - cx * imgW;
         const imgTop  = H / 2 - cy * imgH;
+
+        // Rotation: rotate so the logo script is horizontal.
+        // transformOrigin is the logo center point within the image element.
+        const originX = cx * 100;
+        const originY = cy * 100;
 
         return (
           <img
@@ -80,6 +92,8 @@ export const StopMotion: React.FC<StopMotionProps> = ({
               width: imgW,
               height: imgH,
               opacity,
+              transform: angle !== 0 ? `rotate(${-angle}deg)` : undefined,
+              transformOrigin: `${originX}% ${originY}%`,
             }}
           />
         );

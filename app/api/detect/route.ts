@@ -34,28 +34,24 @@ export async function POST(request: Request) {
   const anthropic = new Anthropic({ apiKey });
 
   const prompt = [
-    'This photo contains a Marshall-branded audio product (a speaker or headphones).',
-    'Your ONLY task: find the GEOMETRIC CENTER of that Marshall device and return',
-    'its exact pixel coordinate.',
+    'This photo contains a Marshall-branded audio product (speaker or headphones).',
+    'Your task: locate the cursive gold/brass "Marshall" script logo on the product.',
     '',
-    'The product is a Marshall-branded object — identified by the gold/brass cursive',
-    '"Marshall" logo. It is ONE of:',
-    '  • a boxy guitar-amp-style SPEAKER (rectangular box, textured grille, knobs on top)',
-    '  • over-ear HEADPHONES (two padded ear cups on a headband)',
-    '',
-    'The center point is the visual midpoint of the WHOLE device — not the logo,',
-    'not a knob, not an ear cup. Imagine a bounding rectangle around the entire',
-    'device; return the center of that rectangle.',
-    '',
-    'CRITICAL: do NOT return the center of a person, face, hand, plant, furniture,',
-    'or any other object — only the Marshall device itself.',
+    'Return FOUR values:',
+    '  cx, cy  — pixel coordinate of the GEOMETRIC CENTER of the "Marshall" script',
+    '             (the midpoint of the text baseline-to-cap bounding box)',
+    '  angle   — degrees the script is tilted FROM horizontal.',
+    '             Positive = clockwise tilt (right side lower than left).',
+    '             Negative = counter-clockwise tilt (left side lower).',
+    '             0 = perfectly horizontal. Typical range: -15 to +15.',
+    '  logo_width — width of the "Marshall" script text in pixels.',
     '',
     'Use a coordinate system where the top-left of the image is (0, 0) and the',
-    'bottom-right is (1000, 1000).',
+    'bottom-right is (1000, 1000). logo_width is also in these same units.',
     '',
     'Respond with ONLY a JSON object, no prose:',
-    '{"found": true, "cx": <x center 0-1000>, "cy": <y center 0-1000>}',
-    'If no Marshall product is visible, respond {"found": false}.',
+    '{"found": true, "cx": <0-1000>, "cy": <0-1000>, "angle": <degrees>, "logo_width": <0-1000>}',
+    'If the Marshall script logo is not visible, respond {"found": false}.',
   ].join('\n');
 
   try {
@@ -81,22 +77,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not parse detection result.', raw }, { status: 502 });
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as { found?: boolean; cx?: number; cy?: number };
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      found?: boolean;
+      cx?: number;
+      cy?: number;
+      angle?: number;
+      logo_width?: number;
+    };
     if (!parsed.found || parsed.cx == null || parsed.cy == null) {
       return NextResponse.json({ found: false });
     }
 
     const cx = clamp01(parsed.cx / 1000);
     const cy = clamp01(parsed.cy / 1000);
+    const angle = typeof parsed.angle === 'number' ? parsed.angle : 0;
+    const logoWidth = typeof parsed.logo_width === 'number'
+      ? clamp01(parsed.logo_width / 1000)
+      : undefined;
 
-    // Return as both the new center-point format and a 1×1 box at the center
-    // for backward compat with any code that still reads .box.
-    return NextResponse.json({
-      found: true,
-      cx,
-      cy,
-      box: { x: cx - 0.001, y: cy - 0.001, w: 0.002, h: 0.002 },
-    });
+    return NextResponse.json({ found: true, cx, cy, angle, logoWidth });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Detection failed.';
     return NextResponse.json({ error: msg }, { status: 502 });
