@@ -203,6 +203,7 @@ export default function HomePage() {
     format,
     sizeTier,
     codec,
+    backgroundImage,
   };
 
   return (
@@ -214,7 +215,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">2.1</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">2.2</span>
           </h1>
           <div className="flex gap-1">
             {(
