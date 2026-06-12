@@ -65,6 +65,11 @@ export const AlignmentBox: React.FC<Props> = ({ value, onChange }) => {
         }}
         onMouseDown={startDrag('move')}
       >
+        {/* Center dot — aligns with the canvas crosshair */}
+        <div
+          className="absolute rounded-full bg-marshall-gold pointer-events-none"
+          style={{ width: 8, height: 8, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        />
         <div
           className="absolute w-3 h-3 bg-marshall-gold cursor-nwse-resize"
           style={{ right: -6, bottom: -6 }}
