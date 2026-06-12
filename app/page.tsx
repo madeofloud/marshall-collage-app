@@ -36,6 +36,9 @@ export default function HomePage() {
   const [smTransition, setSmTransition] = useState<'cut' | 'crossfade'>('cut');
   const [smTargetSize, setSmTargetSize] = useState(0.5);
   const [smBackground, setSmBackground] = useState('#121212');
+  const [smBackgroundImage, setSmBackgroundImage] = useState<string | null>(null);
+  const [smFormat, setSmFormat] = useState<AspectFormat>('1x1');
+  const [smHiddenImages, setSmHiddenImages] = useState<string[]>([]);
 
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
@@ -150,6 +153,9 @@ export default function HomePage() {
     setSmTransition((data.transition as 'cut' | 'crossfade') ?? 'cut');
     setSmTargetSize((data.targetSize as number) ?? 0.5);
     setSmBackground((data.background as string) ?? '#121212');
+    setSmBackgroundImage((data.backgroundImage as string | null) ?? null);
+    setSmFormat((data.format as AspectFormat) ?? '1x1');
+    setSmHiddenImages((data.hiddenImages as string[]) ?? []);
   };
 
   const stopMotionSessionData = {
@@ -159,6 +165,9 @@ export default function HomePage() {
     transition: smTransition,
     targetSize: smTargetSize,
     background: smBackground,
+    backgroundImage: smBackgroundImage,
+    format: smFormat,
+    hiddenImages: smHiddenImages,
   };
 
   const handleExport = async () => {
@@ -209,13 +218,11 @@ export default function HomePage() {
   return (
     <main className="flex h-screen bg-neutral-900">
       <header
-        className={`absolute top-0 left-0 ${
-          mode === 'collage' ? 'right-80' : 'right-0'
-        } px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between`}
+        className={`absolute top-0 left-0 right-80 px-5 py-3 border-b border-white/10 bg-neutral-950/50 backdrop-blur z-10 flex items-center justify-between`}
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">2.4</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">2.5</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -326,6 +333,12 @@ export default function HomePage() {
           setTargetSize={setSmTargetSize}
           background={smBackground}
           setBackground={setSmBackground}
+          backgroundImage={smBackgroundImage}
+          setBackgroundImage={setSmBackgroundImage}
+          format={smFormat}
+          setFormat={setSmFormat}
+          hiddenImages={smHiddenImages}
+          setHiddenImages={setSmHiddenImages}
         />
       )}
     </main>

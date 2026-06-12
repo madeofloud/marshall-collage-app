@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as Slider from '@radix-ui/react-slider';
-import { Check, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Sparkles, Loader2, AlertCircle, ImagePlus, X, Eye, EyeOff } from 'lucide-react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { ImageUploader } from './ImageUploader';
 import { StopMotion } from '@/remotion/src/StopMotion';
@@ -11,6 +11,12 @@ import {
   STOP_MOTION_FPS,
   getStopMotionDuration,
 } from '@/remotion/src/stopMotionTypes';
+import {
+  type AspectFormat,
+  ALL_FORMATS,
+  FORMAT_LABELS,
+  getFormatDimensions,
+} from '@/remotion/src/types';
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-3">{children}</h3>
@@ -65,6 +71,12 @@ type StopMotionStudioProps = {
   setTargetSize: React.Dispatch<React.SetStateAction<number>>;
   background: string;
   setBackground: React.Dispatch<React.SetStateAction<string>>;
+  backgroundImage: string | null;
+  setBackgroundImage: React.Dispatch<React.SetStateAction<string | null>>;
+  format: AspectFormat;
+  setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
+  hiddenImages: string[];
+  setHiddenImages: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
@@ -80,12 +92,40 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   setTargetSize,
   background,
   setBackground,
+  backgroundImage,
+  setBackgroundImage,
+  format,
+  setFormat,
+  hiddenImages,
+  setHiddenImages,
 }) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
   const [isAutoDetecting, setIsAutoDetecting] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const playerRef = useRef<PlayerRef>(null);
+  const bgImageInputRef = useRef<HTMLInputElement>(null);
+
+  // Images shown in the animation (hidden ones are excluded).
+  const visibleImages = images.filter((url) => !hiddenImages.includes(url));
+  const previewDims = getFormatDimensions(format, 'medium');
+
+  const toggleHidden = (url: string) => {
+    setHiddenImages((prev) =>
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
+    );
+  };
+
+  const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (data.url) setBackgroundImage(data.url);
+    e.target.value = '';
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -261,29 +301,30 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
               Done
             </button>
           </div>
-        ) : images.length > 0 ? (
+        ) : visibleImages.length > 0 ? (
           <div
-            className="w-full max-h-full relative flex items-center justify-center"
-            style={{ aspectRatio: '1 / 1', maxWidth: '100%' }}
+            className="max-w-full max-h-full relative flex items-center justify-center"
+            style={{ aspectRatio: `${previewDims.width} / ${previewDims.height}`, height: '100%' }}
           >
             <Player
               ref={playerRef}
               component={StopMotion}
-              durationInFrames={getStopMotionDuration(images.length, framesPerImage)}
+              durationInFrames={getStopMotionDuration(visibleImages.length, framesPerImage)}
               fps={STOP_MOTION_FPS}
-              compositionWidth={900}
-              compositionHeight={900}
+              compositionWidth={previewDims.width}
+              compositionHeight={previewDims.height}
               style={{ width: '100%', height: '100%' }}
               controls
               loop
               autoPlay
               inputProps={{
-                images,
+                images: visibleImages,
                 alignments,
                 framesPerImage,
                 transition,
                 targetSize,
                 background,
+                backgroundImage: backgroundImage ?? undefined,
                 showCenter: true,
               }}
             />
@@ -299,8 +340,28 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
       <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto">
         <div className="p-5 space-y-6">
           <section>
+            <SectionTitle>Format</SectionTitle>
+            <div className="grid grid-cols-5 gap-1">
+              {ALL_FORMATS.map((f) => (
+                <button
+                  type="button"
+                  key={f}
+                  onClick={() => setFormat(f)}
+                  className={`py-2 rounded text-xs font-medium transition ${
+                    format === f
+                      ? 'bg-marshall-gold text-black'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  {FORMAT_LABELS[f]}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
             <SectionTitle>Images</SectionTitle>
-            <ImageUploader images={images} onChange={setImages} />
+            <ImageUploader images={images} onChange={setImages} hiddenImageUrls={hiddenImages} />
           </section>
 
           {images.length > 0 && (
@@ -332,10 +393,11 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   const oy = (1 - fh) / 2;
                   const dotLeft = alignment ? (ox + (alignment.cx ?? 0.5) * fw) * 100 : 50;
                   const dotTop  = alignment ? (oy + (alignment.cy ?? 0.5) * fh) * 100 : 50;
+                  const isHidden = hiddenImages.includes(url);
                   return (
                     <div
                       key={url}
-                      className={`relative aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
+                      className={`relative group aspect-square bg-white/5 rounded overflow-hidden cursor-pointer ${
                         isActive
                           ? 'ring-2 ring-marshall-gold'
                           : alignment
@@ -344,10 +406,31 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                       }`}
                       onClick={() => setActiveAlignImage(url)}
                     >
-                      <img src={url} alt="" className="w-full h-full object-contain" />
+                      <img
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-contain"
+                        style={{ opacity: isHidden ? 0.3 : 1 }}
+                      />
+
+                      {/* Hide / show toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleHidden(url); }}
+                        className={`absolute bottom-0.5 left-0.5 p-0.5 bg-black/70 rounded transition ${
+                          isHidden ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                        aria-label={isHidden ? 'Show image' : 'Hide image'}
+                      >
+                        {isHidden ? (
+                          <EyeOff className="w-2.5 h-2.5 text-white" />
+                        ) : (
+                          <Eye className="w-2.5 h-2.5 text-white" />
+                        )}
+                      </button>
 
                       {/* Center point dot on thumbnail */}
-                      {alignment && status !== 'error' && (
+                      {alignment && status !== 'error' && !isHidden && (
                         <div
                           className="absolute pointer-events-none"
                           style={{
@@ -425,6 +508,36 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 onChange={(e) => setBackground(e.target.value)}
                 className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
               />
+            </div>
+            <div className="mt-2 space-y-2">
+              <input
+                ref={bgImageInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/gif"
+                className="hidden"
+                onChange={handleBgImageUpload}
+              />
+              <button
+                type="button"
+                onClick={() => bgImageInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white/90 transition"
+              >
+                <ImagePlus className="w-3.5 h-3.5" />
+                Upload background image
+              </button>
+              {backgroundImage && (
+                <div className="relative w-full h-16 rounded overflow-hidden bg-white/5">
+                  <img src={backgroundImage} alt="Background" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setBackgroundImage(null)}
+                    className="absolute top-1 right-1 p-0.5 bg-black/70 rounded"
+                    aria-label="Remove background image"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         </div>

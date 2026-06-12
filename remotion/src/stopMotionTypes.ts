@@ -24,6 +24,7 @@ export type StopMotionProps = {
   targetSize: number; // logo width as fraction of canvas width (when logoWidth known)
                       // or image height as fraction of canvas height (legacy)
   background: string;
+  backgroundImage?: string; // optional full-bleed background image URL
   showCenter?: boolean;
 };
 

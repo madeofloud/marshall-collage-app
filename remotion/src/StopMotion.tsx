@@ -29,6 +29,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
   transition,
   targetSize,
   background,
+  backgroundImage,
   showCenter,
 }) => {
   const frame = useCurrentFrame();
@@ -41,6 +42,18 @@ export const StopMotion: React.FC<StopMotionProps> = ({
 
   return (
     <AbsoluteFill style={{ background, overflow: 'hidden' }}>
+      {backgroundImage && (
+        <img
+          src={backgroundImage}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      )}
       {images.map((url, i) => {
         const a = alignments[url];
         if (!a) return null;
