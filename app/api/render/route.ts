@@ -58,8 +58,10 @@ export async function POST(request: Request) {
     }
 
     const compositionId = getCompositionId(format, sizeTier);
-    const lambdaCodec = codec === 'prores' ? 'prores' : 'h264';
-    const fileExt = codec === 'prores' ? 'mov' : 'mp4';
+    const isTransparent = background === 'transparent';
+    // h264 does not support alpha — force prores for transparent renders.
+    const resolvedCodec = isTransparent ? 'prores' : codec === 'prores' ? 'prores' : 'h264';
+    const fileExt = resolvedCodec === 'prores' ? 'mov' : 'mp4';
 
     const { renderId, bucketName } = await renderMediaOnLambda({
       region: REGION,
@@ -73,7 +75,8 @@ export async function POST(request: Request) {
         grainAmount,
         panelOverrides,
       },
-      codec: lambdaCodec as 'h264' | 'prores',
+      codec: resolvedCodec as 'h264' | 'prores',
+      ...(isTransparent ? { pixelFormat: 'yuva420p' } : {}),
       imageFormat: 'jpeg',
       maxRetries: 1,
       privacy: 'public',

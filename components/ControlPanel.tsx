@@ -209,21 +209,48 @@ export const ControlPanel: React.FC<Props> = ({
         {/* Background */}
         <section>
           <SectionTitle>Background</SectionTitle>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={background}
-              onChange={(e) => setBackground(e.target.value)}
-              className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
-            />
-            <input
-              type="text"
-              value={background}
-              onChange={(e) => setBackground(e.target.value)}
-              className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
-            />
-          </div>
           <div className="mt-2 space-y-2">
+            {/* Transparent background toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <div
+                className={`w-8 h-4 rounded-full transition-colors flex-shrink-0 ${
+                  background === 'transparent' ? 'bg-marshall-gold' : 'bg-white/20'
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 mt-[1px] ml-[1px] rounded-full bg-white shadow transition-transform ${
+                    background === 'transparent' ? 'translate-x-3.5' : 'translate-x-0'
+                  }`}
+                />
+              </div>
+              <input
+                type="checkbox"
+                className="hidden"
+                checked={background === 'transparent'}
+                onChange={(e) => setBackground(e.target.checked ? 'transparent' : '#121212')}
+              />
+              <span className="text-xs text-white/70">Transparent bakgrund</span>
+              {background === 'transparent' && (
+                <span className="text-[10px] text-white/40 ml-auto">Kräver ProRes</span>
+              )}
+            </label>
+
+            {background !== 'transparent' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+                />
+                <input
+                  type="text"
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                />
+              </div>
+            )}
             <input
               ref={bgImageInputRef}
               type="file"
@@ -379,20 +406,25 @@ export const ControlPanel: React.FC<Props> = ({
               {exportDims.width} × {exportDims.height}
             </div>
             <div className="flex gap-1">
-              {(['h264', 'prores'] as const).map((c) => (
-                <button
-                  type="button"
-                  key={c}
-                  onClick={() => setCodec(c)}
-                  className={`flex-1 py-1.5 rounded text-xs ${
-                    codec === c
-                      ? 'bg-marshall-gold text-black font-semibold'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-                >
-                  {c.toUpperCase()}
-                </button>
-              ))}
+              {(['h264', 'prores'] as const).map((c) => {
+                const disabledByTransparent = background === 'transparent' && c === 'h264';
+                const active = codec === c || (background === 'transparent' && c === 'prores');
+                return (
+                  <button
+                    type="button"
+                    key={c}
+                    onClick={() => setCodec(c)}
+                    disabled={disabledByTransparent}
+                    className={`flex-1 py-1.5 rounded text-xs disabled:opacity-30 disabled:cursor-not-allowed ${
+                      active
+                        ? 'bg-marshall-gold text-black font-semibold'
+                        : 'bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    {c.toUpperCase()}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <button
