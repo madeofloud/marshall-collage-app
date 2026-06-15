@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         panelOverrides,
       },
       codec: resolvedCodec as 'h264' | 'prores',
-      ...(isTransparent ? { pixelFormat: 'yuva420p' } : {}),
+      ...(isTransparent ? { pixelFormat: 'yuva444p10le' } : {}),
       framesPerLambda: 500,
       imageFormat: 'jpeg',
       maxRetries: 1,
