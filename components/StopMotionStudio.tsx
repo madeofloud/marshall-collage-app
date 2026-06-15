@@ -377,7 +377,16 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
         ) : visibleImages.length > 0 ? (
           <div
             className="max-w-full max-h-full relative flex items-center justify-center"
-            style={{ aspectRatio: `${previewDims.width} / ${previewDims.height}`, height: '100%' }}
+            style={{
+              aspectRatio: `${previewDims.width} / ${previewDims.height}`,
+              height: '100%',
+              ...(background === 'transparent' ? {
+                backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+                backgroundSize: '16px 16px',
+                backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                backgroundColor: '#fff',
+              } : {}),
+            }}
           >
             <Player
               ref={playerRef}
