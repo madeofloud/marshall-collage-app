@@ -86,27 +86,8 @@ export async function POST(request: Request) {
       },
     });
 
-    const startTime = Date.now();
-    const TIMEOUT_MS = 4 * 60 * 1000;
-    while (Date.now() - startTime < TIMEOUT_MS) {
-      const progress = await getRenderProgress({
-        renderId,
-        bucketName,
-        functionName: FUNCTION_NAME,
-        region: REGION,
-      });
-      if (progress.fatalErrorEncountered) {
-        return NextResponse.json(
-          { error: 'Render failed: ' + (progress.errors[0]?.message || 'Unknown') },
-          { status: 500 }
-        );
-      }
-      if (progress.done) {
-        return NextResponse.json({ downloadUrl: progress.outputFile, renderId });
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-    return NextResponse.json({ error: 'Render timed out' }, { status: 504 });
+    // Return immediately — frontend polls /api/render-progress for status.
+    return NextResponse.json({ renderId, bucketName });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Render failed';
     return NextResponse.json({ error: msg }, { status: 500 });

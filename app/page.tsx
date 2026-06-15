@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { CollagePreview } from '@/components/CollagePreview';
 import { ControlPanel } from '@/components/ControlPanel';
 import { SessionManager } from '@/components/SessionManager';
@@ -28,6 +28,7 @@ export default function HomePage() {
   const [sizeTier, setSizeTier] = useState<SizeTier>('medium');
   const [codec, setCodec] = useState<'h264' | 'prores'>('h264');
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<number>(0);
 
   // Stop Motion workspace state (separate project from the collage).
   const [smImages, setSmImages] = useState<string[]>([]);
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [smSizeTier, setSmSizeTier] = useState<SizeTier>('medium');
   const [smCodec, setSmCodec] = useState<'h264' | 'prores'>('h264');
   const [isExportingStopMotion, setIsExportingStopMotion] = useState(false);
+  const [exportProgressStopMotion, setExportProgressStopMotion] = useState<number>(0);
 
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
@@ -54,6 +56,53 @@ export default function HomePage() {
 
   // Undo history for panel overrides (Cmd+Z / Ctrl+Z)
   const undoStack = useRef<PanelOverrides[]>([]);
+
+  const isAnyExporting = isExporting || isExportingStopMotion;
+
+  // Warn user before leaving while a render is in progress.
+  useEffect(() => {
+    if (!isAnyExporting) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isAnyExporting]);
+
+  const pollProgress = useCallback(
+    async (
+      renderId: string,
+      bucketName: string,
+      setProgress: (p: number) => void,
+      onDone: (url: string) => void,
+      onError: (msg: string) => void,
+    ) => {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(
+            `/api/render-progress?renderId=${encodeURIComponent(renderId)}&bucketName=${encodeURIComponent(bucketName)}`
+          );
+          const data = await res.json();
+          if (data.error) {
+            clearInterval(interval);
+            onError(data.error);
+            return;
+          }
+          if (data.done) {
+            clearInterval(interval);
+            setProgress(1);
+            onDone(data.downloadUrl);
+          } else {
+            setProgress(data.progress ?? 0);
+          }
+        } catch {
+          clearInterval(interval);
+          onError('Progress check failed');
+        }
+      }, 2000);
+    },
+    []
+  );
 
   const handleUpdatePanelOverride = (override: PanelOverride) => {
     if (!selectedPanelId) return;
@@ -182,6 +231,7 @@ export default function HomePage() {
   const handleExportStopMotion = async () => {
     if (visibleSmImages.length === 0) return;
     setIsExportingStopMotion(true);
+    setExportProgressStopMotion(0);
     try {
       const res = await fetch('/api/render-stopmotion', {
         method: 'POST',
@@ -203,18 +253,30 @@ export default function HomePage() {
         const err = await res.json().catch(() => ({ error: 'Render failed' }));
         throw new Error(err.error || 'Render failed');
       }
-      const { downloadUrl } = await res.json();
-      window.open(downloadUrl, '_blank');
+      const { renderId, bucketName } = await res.json();
+      pollProgress(
+        renderId,
+        bucketName,
+        setExportProgressStopMotion,
+        (url) => {
+          setIsExportingStopMotion(false);
+          window.open(url, '_blank');
+        },
+        (msg) => {
+          setIsExportingStopMotion(false);
+          alert(msg);
+        },
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
-    } finally {
       setIsExportingStopMotion(false);
     }
   };
 
   const handleExport = async () => {
     setIsExporting(true);
+    setExportProgress(0);
     try {
       const res = await fetch('/api/render', {
         method: 'POST',
@@ -236,12 +298,23 @@ export default function HomePage() {
         throw new Error(err.error || 'Render failed');
       }
 
-      const { downloadUrl } = await res.json();
-      window.open(downloadUrl, '_blank');
+      const { renderId, bucketName } = await res.json();
+      pollProgress(
+        renderId,
+        bucketName,
+        setExportProgress,
+        (url) => {
+          setIsExporting(false);
+          window.open(url, '_blank');
+        },
+        (msg) => {
+          setIsExporting(false);
+          alert(msg);
+        },
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
-    } finally {
       setIsExporting(false);
     }
   };
@@ -265,7 +338,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">3.1</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">3.2</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -352,6 +425,7 @@ export default function HomePage() {
             setCodec={setCodec}
             onExport={handleExport}
             isExporting={isExporting}
+            exportProgress={exportProgress}
             selectedImageUrl={selectedImageUrl ?? undefined}
             onSelectImage={handleSelectImage}
             hiddenImageUrls={hiddenImageUrls}
@@ -388,6 +462,7 @@ export default function HomePage() {
           setCodec={setSmCodec}
           onExport={handleExportStopMotion}
           isExporting={isExportingStopMotion}
+          exportProgress={exportProgressStopMotion}
         />
       )}
     </main>

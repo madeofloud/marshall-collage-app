@@ -86,6 +86,7 @@ type StopMotionStudioProps = {
   setCodec: React.Dispatch<React.SetStateAction<'h264' | 'prores'>>;
   onExport: () => void;
   isExporting: boolean;
+  exportProgress?: number;
 };
 
 export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
@@ -113,6 +114,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   setCodec,
   onExport,
   isExporting,
+  exportProgress,
 }) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
@@ -726,14 +728,28 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 })}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onExport}
-              disabled={isExporting || visibleImages.length === 0}
-              className="w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 disabled:opacity-30 disabled:cursor-not-allowed transition"
-            >
-              {isExporting ? 'Rendering…' : 'Export Video'}
-            </button>
+            {isExporting && exportProgress !== undefined ? (
+              <div className="space-y-1.5">
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-marshall-gold transition-all duration-500"
+                    style={{ width: `${Math.round(exportProgress * 100)}%` }}
+                  />
+                </div>
+                <p className="text-center text-xs text-white/50">
+                  Rendering… {Math.round(exportProgress * 100)}%
+                </p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onExport}
+                disabled={isExporting || visibleImages.length === 0}
+                className="w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                {isExporting ? 'Rendering…' : 'Export Video'}
+              </button>
+            )}
           </section>
         </div>
       </div>
