@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         images,
         background,
         rotationSpeed,
-        grainAmount,
+        grainAmount: isTransparent ? 0 : grainAmount,
         panelOverrides,
       },
       codec: resolvedCodec as 'h264' | 'prores',
