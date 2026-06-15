@@ -438,9 +438,9 @@ export const ControlPanel: React.FC<Props> = ({
               <a
                 href={exportDownloadUrl}
                 download
-                className="block w-full py-2.5 bg-green-600 text-white font-semibold rounded hover:bg-green-500 transition text-center text-sm"
+                className="block w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 transition text-center text-sm"
               >
-                Ladda ner video
+                Download Video
               </a>
               <button
                 type="button"
