@@ -39,6 +39,9 @@ export default function HomePage() {
   const [smBackgroundImage, setSmBackgroundImage] = useState<string | null>(null);
   const [smFormat, setSmFormat] = useState<AspectFormat>('1x1');
   const [smHiddenImages, setSmHiddenImages] = useState<string[]>([]);
+  const [smSizeTier, setSmSizeTier] = useState<SizeTier>('medium');
+  const [smCodec, setSmCodec] = useState<'h264' | 'prores'>('h264');
+  const [isExportingStopMotion, setIsExportingStopMotion] = useState(false);
 
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
@@ -156,6 +159,8 @@ export default function HomePage() {
     setSmBackgroundImage((data.backgroundImage as string | null) ?? null);
     setSmFormat((data.format as AspectFormat) ?? '1x1');
     setSmHiddenImages((data.hiddenImages as string[]) ?? []);
+    setSmSizeTier((data.sizeTier as SizeTier) ?? 'medium');
+    setSmCodec((data.codec as 'h264' | 'prores') ?? 'h264');
   };
 
   const stopMotionSessionData = {
@@ -168,6 +173,44 @@ export default function HomePage() {
     backgroundImage: smBackgroundImage,
     format: smFormat,
     hiddenImages: smHiddenImages,
+    sizeTier: smSizeTier,
+    codec: smCodec,
+  };
+
+  const visibleSmImages = smImages.filter((url) => !smHiddenImages.includes(url));
+
+  const handleExportStopMotion = async () => {
+    if (visibleSmImages.length === 0) return;
+    setIsExportingStopMotion(true);
+    try {
+      const res = await fetch('/api/render-stopmotion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: visibleSmImages,
+          alignments: smAlignments,
+          framesPerImage: smFramesPerImage,
+          transition: smTransition,
+          targetSize: smTargetSize,
+          background: smBackground,
+          backgroundImage: smBackgroundImage,
+          format: smFormat,
+          sizeTier: smSizeTier,
+          codec: smCodec,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Render failed' }));
+        throw new Error(err.error || 'Render failed');
+      }
+      const { downloadUrl } = await res.json();
+      window.open(downloadUrl, '_blank');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      alert(msg);
+    } finally {
+      setIsExportingStopMotion(false);
+    }
   };
 
   const handleExport = async () => {
@@ -222,7 +265,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">2.7</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">2.8</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -339,6 +382,12 @@ export default function HomePage() {
           setFormat={setSmFormat}
           hiddenImages={smHiddenImages}
           setHiddenImages={setSmHiddenImages}
+          sizeTier={smSizeTier}
+          setSizeTier={setSmSizeTier}
+          codec={smCodec}
+          setCodec={setSmCodec}
+          onExport={handleExportStopMotion}
+          isExporting={isExportingStopMotion}
         />
       )}
     </main>

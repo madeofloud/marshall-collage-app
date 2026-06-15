@@ -13,8 +13,11 @@ import {
 } from '@/remotion/src/stopMotionTypes';
 import {
   type AspectFormat,
+  type SizeTier,
   ALL_FORMATS,
+  ALL_SIZES,
   FORMAT_LABELS,
+  SIZE_LABELS,
   getFormatDimensions,
 } from '@/remotion/src/types';
 
@@ -77,6 +80,12 @@ type StopMotionStudioProps = {
   setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
   hiddenImages: string[];
   setHiddenImages: React.Dispatch<React.SetStateAction<string[]>>;
+  sizeTier: SizeTier;
+  setSizeTier: React.Dispatch<React.SetStateAction<SizeTier>>;
+  codec: 'h264' | 'prores';
+  setCodec: React.Dispatch<React.SetStateAction<'h264' | 'prores'>>;
+  onExport: () => void;
+  isExporting: boolean;
 };
 
 export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
@@ -98,6 +107,12 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   setFormat,
   hiddenImages,
   setHiddenImages,
+  sizeTier,
+  setSizeTier,
+  codec,
+  setCodec,
+  onExport,
+  isExporting,
 }) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
@@ -583,20 +598,49 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
 
           <section>
             <SectionTitle>Background</SectionTitle>
-            <div className="flex items-center gap-2">
+            {/* Transparent toggle */}
+            <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
+              <div
+                className={`w-8 h-4 rounded-full transition-colors ${
+                  background === 'transparent' ? 'bg-marshall-gold' : 'bg-white/20'
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 mt-0.25 rounded-full bg-white shadow transition-transform ${
+                    background === 'transparent' ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </div>
               <input
-                type="color"
-                value={background}
-                onChange={(e) => setBackground(e.target.value)}
-                className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+                type="checkbox"
+                className="hidden"
+                checked={background === 'transparent'}
+                onChange={(e) => {
+                  if (e.target.checked) setBackground('transparent');
+                  else setBackground('#121212');
+                }}
               />
-              <input
-                type="text"
-                value={background}
-                onChange={(e) => setBackground(e.target.value)}
-                className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
-              />
-            </div>
+              <span className="text-xs text-white/70">Transparent bakgrund</span>
+              {background === 'transparent' && (
+                <span className="text-[10px] text-white/40 ml-auto">Kräver ProRes vid export</span>
+              )}
+            </label>
+            {background !== 'transparent' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+                />
+                <input
+                  type="text"
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                />
+              </div>
+            )}
             <div className="mt-2 space-y-2">
               <input
                 ref={bgImageInputRef}
@@ -627,6 +671,60 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 </div>
               )}
             </div>
+          </section>
+
+          {/* Export */}
+          <section className="space-y-3 pt-4 border-t border-white/10">
+            <SectionTitle>Export</SectionTitle>
+            <div className="space-y-2">
+              <div className="flex gap-1">
+                {ALL_SIZES.map((s) => (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setSizeTier(s)}
+                    className={`flex-1 py-1.5 rounded text-xs ${
+                      sizeTier === s
+                        ? 'bg-marshall-gold text-black font-semibold'
+                        : 'bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    {SIZE_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-white/40 text-center tabular-nums">
+                {getFormatDimensions(format, sizeTier).width} × {getFormatDimensions(format, sizeTier).height}
+              </div>
+              <div className="flex gap-1">
+                {(['h264', 'prores'] as const).map((c) => {
+                  const isForced = background === 'transparent' && c === 'prores';
+                  return (
+                    <button
+                      type="button"
+                      key={c}
+                      onClick={() => setCodec(c)}
+                      disabled={background === 'transparent' && c === 'h264'}
+                      className={`flex-1 py-1.5 rounded text-xs disabled:opacity-30 disabled:cursor-not-allowed ${
+                        codec === c || isForced
+                          ? 'bg-marshall-gold text-black font-semibold'
+                          : 'bg-white/5 text-white/70 hover:bg-white/10'
+                      }`}
+                    >
+                      {c.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onExport}
+              disabled={isExporting || visibleImages.length === 0}
+              className="w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              {isExporting ? 'Rendering…' : 'Export Video'}
+            </button>
           </section>
         </div>
       </div>
