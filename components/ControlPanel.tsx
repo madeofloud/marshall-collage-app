@@ -36,6 +36,8 @@ type Props = {
   onExport: () => void;
   isExporting: boolean;
   exportProgress?: number;
+  exportDownloadUrl?: string | null;
+  onClearDownload?: () => void;
   selectedImageUrl?: string;
   onSelectImage?: (url: string) => void;
   hiddenImageUrls?: string[];
@@ -146,6 +148,8 @@ export const ControlPanel: React.FC<Props> = ({
   onExport,
   isExporting,
   exportProgress,
+  exportDownloadUrl,
+  onClearDownload,
   selectedImageUrl,
   onSelectImage,
   hiddenImageUrls,
@@ -429,7 +433,24 @@ export const ControlPanel: React.FC<Props> = ({
               })}
             </div>
           </div>
-          {isExporting && exportProgress !== undefined ? (
+          {exportDownloadUrl ? (
+            <div className="space-y-2">
+              <a
+                href={exportDownloadUrl}
+                download
+                className="block w-full py-2.5 bg-green-600 text-white font-semibold rounded hover:bg-green-500 transition text-center text-sm"
+              >
+                Ladda ner video
+              </a>
+              <button
+                type="button"
+                onClick={onClearDownload}
+                className="w-full py-1.5 text-xs text-white/40 hover:text-white/70 transition"
+              >
+                Stäng
+              </button>
+            </div>
+          ) : isExporting && exportProgress !== undefined ? (
             <div className="space-y-1.5">
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -448,7 +469,7 @@ export const ControlPanel: React.FC<Props> = ({
               disabled={isExporting || images.length === 0}
               className="w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
-              {isExporting ? 'Rendering...' : 'Export Video'}
+              Export Video
             </button>
           )}
         </section>

@@ -87,6 +87,8 @@ type StopMotionStudioProps = {
   onExport: () => void;
   isExporting: boolean;
   exportProgress?: number;
+  exportDownloadUrl?: string | null;
+  onClearDownload?: () => void;
 };
 
 export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
@@ -115,6 +117,8 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
   onExport,
   isExporting,
   exportProgress,
+  exportDownloadUrl,
+  onClearDownload,
 }) => {
   const [activeAlignImage, setActiveAlignImage] = useState<string | null>(null);
   const [detectStatus, setDetectStatus] = useState<Record<string, 'loading' | 'done' | 'error'>>({});
@@ -728,7 +732,24 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 })}
               </div>
             </div>
-            {isExporting && exportProgress !== undefined ? (
+            {exportDownloadUrl ? (
+              <div className="space-y-2">
+                <a
+                  href={exportDownloadUrl}
+                  download
+                  className="block w-full py-2.5 bg-green-600 text-white font-semibold rounded hover:bg-green-500 transition text-center text-sm"
+                >
+                  Ladda ner video
+                </a>
+                <button
+                  type="button"
+                  onClick={onClearDownload}
+                  className="w-full py-1.5 text-xs text-white/40 hover:text-white/70 transition"
+                >
+                  Stäng
+                </button>
+              </div>
+            ) : isExporting && exportProgress !== undefined ? (
               <div className="space-y-1.5">
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
@@ -747,7 +768,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                 disabled={isExporting || visibleImages.length === 0}
                 className="w-full py-2.5 bg-marshall-gold text-black font-semibold rounded hover:bg-marshall-gold/90 disabled:opacity-30 disabled:cursor-not-allowed transition"
               >
-                {isExporting ? 'Rendering…' : 'Export Video'}
+                Export Video
               </button>
             )}
           </section>

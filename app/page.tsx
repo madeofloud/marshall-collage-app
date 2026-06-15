@@ -29,6 +29,7 @@ export default function HomePage() {
   const [codec, setCodec] = useState<'h264' | 'prores'>('h264');
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
+  const [exportDownloadUrl, setExportDownloadUrl] = useState<string | null>(null);
 
   // Stop Motion workspace state (separate project from the collage).
   const [smImages, setSmImages] = useState<string[]>([]);
@@ -44,6 +45,7 @@ export default function HomePage() {
   const [smCodec, setSmCodec] = useState<'h264' | 'prores'>('h264');
   const [isExportingStopMotion, setIsExportingStopMotion] = useState(false);
   const [exportProgressStopMotion, setExportProgressStopMotion] = useState<number>(0);
+  const [exportDownloadUrlStopMotion, setExportDownloadUrlStopMotion] = useState<string | null>(null);
 
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
@@ -260,7 +262,7 @@ export default function HomePage() {
         setExportProgressStopMotion,
         (url) => {
           setIsExportingStopMotion(false);
-          window.open(url, '_blank');
+          setExportDownloadUrlStopMotion(url);
         },
         (msg) => {
           setIsExportingStopMotion(false);
@@ -305,7 +307,7 @@ export default function HomePage() {
         setExportProgress,
         (url) => {
           setIsExporting(false);
-          window.open(url, '_blank');
+          setExportDownloadUrl(url);
         },
         (msg) => {
           setIsExporting(false);
@@ -338,7 +340,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">3.2</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">3.3</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -426,6 +428,8 @@ export default function HomePage() {
             onExport={handleExport}
             isExporting={isExporting}
             exportProgress={exportProgress}
+            exportDownloadUrl={exportDownloadUrl}
+            onClearDownload={() => setExportDownloadUrl(null)}
             selectedImageUrl={selectedImageUrl ?? undefined}
             onSelectImage={handleSelectImage}
             hiddenImageUrls={hiddenImageUrls}
@@ -463,6 +467,8 @@ export default function HomePage() {
           onExport={handleExportStopMotion}
           isExporting={isExportingStopMotion}
           exportProgress={exportProgressStopMotion}
+          exportDownloadUrl={exportDownloadUrlStopMotion}
+          onClearDownload={() => setExportDownloadUrlStopMotion(null)}
         />
       )}
     </main>
