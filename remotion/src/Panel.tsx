@@ -1,4 +1,5 @@
 import React from 'react';
+import { Img } from 'remotion';
 import type { Panel } from './types';
 
 type Props = {
@@ -36,11 +37,9 @@ export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline
         outlineOffset: '2px',
       }}
     >
-      <img
+      <Img
         src={panel.image}
-        crossOrigin="anonymous"
         style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none' }}
-        alt=""
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { Alignment, StopMotionProps } from './stopMotionTypes';
 
 function circularDistance(a: number, b: number, total: number): number {
@@ -43,7 +43,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
   return (
     <AbsoluteFill style={{ background, overflow: 'hidden' }}>
       {backgroundImage && (
-        <img
+        <Img
           src={backgroundImage}
           style={{
             position: 'absolute',
@@ -99,7 +99,7 @@ export const StopMotion: React.FC<StopMotionProps> = ({
         const originY = cy * 100;
 
         return (
-          <img
+          <Img
             key={url}
             src={url}
             style={{

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import { PanelComponent } from './Panel';
 import { generatePanels } from './generation';
 import type { CollageProps } from './types';
@@ -75,7 +75,7 @@ export const Collage: React.FC<Props> = ({
       style={{ background, perspective: 1600 * s }}
     >
       {backgroundImage && (
-        <img
+        <Img
           src={backgroundImage}
           style={{
             position: 'absolute',
