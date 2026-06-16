@@ -16,6 +16,7 @@
     "@radix-ui/react-slider": "1.2.1",
     "@radix-ui/react-slot": "1.1.0",
     "@remotion/cli": "4.0.457",
+    "@remotion/cloudrun": "^4.0.457",
     "@remotion/lambda": "4.0.457",
     "@remotion/player": "4.0.457",
     "@remotion/zod-types": "4.0.457",

@@ -255,20 +255,28 @@ export default function HomePage() {
         const err = await res.json().catch(() => ({ error: 'Render failed' }));
         throw new Error(err.error || 'Render failed');
       }
-      const { renderId, bucketName } = await res.json();
-      pollProgress(
-        renderId,
-        bucketName,
-        setExportProgressStopMotion,
-        (url) => {
-          setIsExportingStopMotion(false);
-          setExportDownloadUrlStopMotion(url);
-        },
-        (msg) => {
-          setIsExportingStopMotion(false);
-          alert(msg);
-        },
-      );
+      const data = await res.json();
+      if (data.downloadUrl) {
+        setExportProgressStopMotion(1);
+        setIsExportingStopMotion(false);
+        setExportDownloadUrlStopMotion(data.downloadUrl);
+      } else if (data.renderId && data.bucketName) {
+        pollProgress(
+          data.renderId,
+          data.bucketName,
+          setExportProgressStopMotion,
+          (url) => {
+            setIsExportingStopMotion(false);
+            setExportDownloadUrlStopMotion(url);
+          },
+          (msg) => {
+            setIsExportingStopMotion(false);
+            alert(msg);
+          },
+        );
+      } else {
+        throw new Error(data.error || 'Render failed');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
@@ -300,20 +308,28 @@ export default function HomePage() {
         throw new Error(err.error || 'Render failed');
       }
 
-      const { renderId, bucketName } = await res.json();
-      pollProgress(
-        renderId,
-        bucketName,
-        setExportProgress,
-        (url) => {
-          setIsExporting(false);
-          setExportDownloadUrl(url);
-        },
-        (msg) => {
-          setIsExporting(false);
-          alert(msg);
-        },
-      );
+      const data = await res.json();
+      if (data.downloadUrl) {
+        setExportProgress(1);
+        setIsExporting(false);
+        setExportDownloadUrl(data.downloadUrl);
+      } else if (data.renderId && data.bucketName) {
+        pollProgress(
+          data.renderId,
+          data.bucketName,
+          setExportProgress,
+          (url) => {
+            setIsExporting(false);
+            setExportDownloadUrl(url);
+          },
+          (msg) => {
+            setIsExporting(false);
+            alert(msg);
+          },
+        );
+      } else {
+        throw new Error(data.error || 'Render failed');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
@@ -340,7 +356,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.1</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.2</span>
           </h1>
           <div className="flex gap-1">
             {(
