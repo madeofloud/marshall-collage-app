@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       },
       codec: resolvedCodec as 'h264' | 'prores',
       ...(isTransparent ? { pixelFormat: 'yuva444p10le', proResProfile: '4444' } : {}),
-      framesPerLambda: 500,
+      framesPerLambda: isTransparent ? 30 : 500,
       imageFormat: isTransparent ? 'png' : 'jpeg',
       maxRetries: 1,
       privacy: 'public',
