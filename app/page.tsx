@@ -230,15 +230,59 @@ export default function HomePage() {
 
   const visibleSmImages = smImages.filter((url) => !smHiddenImages.includes(url));
 
+  const streamRender = async (
+    url: string,
+    bodyData: object,
+    setProgress: (p: number) => void,
+    setDone: (downloadUrl: string) => void,
+    setExporting: (v: boolean) => void,
+  ) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (!res.ok || !res.body) {
+      const err = await res.json().catch(() => ({ error: 'Render failed' }));
+      throw new Error(err.error || 'Render failed');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+        if (data.error) throw new Error(data.error);
+        if (data.done) {
+          setProgress(1);
+          setExporting(false);
+          setDone(data.downloadUrl);
+          return;
+        }
+        if (typeof data.progress === 'number') {
+          setProgress(data.progress);
+        }
+      }
+    }
+  };
+
   const handleExportStopMotion = async () => {
     if (visibleSmImages.length === 0) return;
     setIsExportingStopMotion(true);
     setExportProgressStopMotion(0);
     try {
-      const res = await fetch('/api/render-stopmotion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await streamRender(
+        '/api/render-stopmotion',
+        {
           images: visibleSmImages,
           alignments: smAlignments,
           framesPerImage: smFramesPerImage,
@@ -249,34 +293,11 @@ export default function HomePage() {
           format: smFormat,
           sizeTier: smSizeTier,
           codec: smCodec,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Render failed' }));
-        throw new Error(err.error || 'Render failed');
-      }
-      const data = await res.json();
-      if (data.downloadUrl) {
-        setExportProgressStopMotion(1);
-        setIsExportingStopMotion(false);
-        setExportDownloadUrlStopMotion(data.downloadUrl);
-      } else if (data.renderId && data.bucketName) {
-        pollProgress(
-          data.renderId,
-          data.bucketName,
-          setExportProgressStopMotion,
-          (url) => {
-            setIsExportingStopMotion(false);
-            setExportDownloadUrlStopMotion(url);
-          },
-          (msg) => {
-            setIsExportingStopMotion(false);
-            alert(msg);
-          },
-        );
-      } else {
-        throw new Error(data.error || 'Render failed');
-      }
+        },
+        setExportProgressStopMotion,
+        setExportDownloadUrlStopMotion,
+        setIsExportingStopMotion,
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
@@ -288,48 +309,13 @@ export default function HomePage() {
     setIsExporting(true);
     setExportProgress(0);
     try {
-      const res = await fetch('/api/render', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          images,
-          background,
-          rotationSpeed,
-          grainAmount,
-          panelOverrides,
-          format,
-          sizeTier,
-          codec,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Render failed' }));
-        throw new Error(err.error || 'Render failed');
-      }
-
-      const data = await res.json();
-      if (data.downloadUrl) {
-        setExportProgress(1);
-        setIsExporting(false);
-        setExportDownloadUrl(data.downloadUrl);
-      } else if (data.renderId && data.bucketName) {
-        pollProgress(
-          data.renderId,
-          data.bucketName,
-          setExportProgress,
-          (url) => {
-            setIsExporting(false);
-            setExportDownloadUrl(url);
-          },
-          (msg) => {
-            setIsExporting(false);
-            alert(msg);
-          },
-        );
-      } else {
-        throw new Error(data.error || 'Render failed');
-      }
+      await streamRender(
+        '/api/render',
+        { images, background, rotationSpeed, grainAmount, panelOverrides, format, sizeTier, codec },
+        setExportProgress,
+        setExportDownloadUrl,
+        setIsExporting,
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Export failed';
       alert(msg);
@@ -356,7 +342,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.2</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.3</span>
           </h1>
           <div className="flex gap-1">
             {(
