@@ -33,9 +33,11 @@ const SliderRow = ({
 
 export type InfinityZoomStudioProps = {
   items: InfinityZoomItem[]; setItems: React.Dispatch<React.SetStateAction<InfinityZoomItem[]>>;
-  maxZoom: number; setMaxZoom: React.Dispatch<React.SetStateAction<number>>;
+  zoomFactor: number; setZoomFactor: React.Dispatch<React.SetStateAction<number>>;
   secondsPerImage: number; setSecondsPerImage: React.Dispatch<React.SetStateAction<number>>;
-  motionBlur: number; setMotionBlur: React.Dispatch<React.SetStateAction<number>>;
+  feather: number; setFeather: React.Dispatch<React.SetStateAction<number>>;
+  depthBlur: number; setDepthBlur: React.Dispatch<React.SetStateAction<number>>;
+  driftAmount: number; setDriftAmount: React.Dispatch<React.SetStateAction<number>>;
   backgroundColor: string; setBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
   format: AspectFormat; setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
   sizeTier: SizeTier; setSizeTier: React.Dispatch<React.SetStateAction<SizeTier>>;
@@ -49,9 +51,11 @@ export type InfinityZoomStudioProps = {
 
 export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
   items, setItems,
-  maxZoom, setMaxZoom,
+  zoomFactor, setZoomFactor,
   secondsPerImage, setSecondsPerImage,
-  motionBlur, setMotionBlur,
+  feather, setFeather,
+  depthBlur, setDepthBlur,
+  driftAmount, setDriftAmount,
   backgroundColor, setBackgroundColor,
   format, setFormat, sizeTier, setSizeTier, codec, setCodec,
   onExport, isExporting, exportProgress, exportDownloadUrl, onClearDownload,
@@ -66,7 +70,7 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
     Math.round(secondsPerImage * INFINITY_ZOOM_FPS * Math.max(1, items.length))
   );
 
-  const inputProps = { items, maxZoom, secondsPerImage, motionBlur, backgroundColor };
+  const inputProps = { items, zoomFactor, secondsPerImage, feather, depthBlur, driftAmount, backgroundColor };
 
   const uploadFile = async (file: File) => {
     setUploading(true);
@@ -214,12 +218,14 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
           {/* Zoom */}
           <div className="space-y-4">
             <SectionTitle>Zoom</SectionTitle>
-            <SliderRow label="Max zoom (×)" value={maxZoom} min={10} max={40} step={1} onChange={setMaxZoom} />
-            <SliderRow label="Seconds per image" value={secondsPerImage} min={1.5} max={4} step={0.25} onChange={setSecondsPerImage} />
-            <SliderRow label="Motion blur (hide cut)" value={motionBlur} min={0} max={1} step={0.05} onChange={setMotionBlur} />
+            <SliderRow label="Zoom factor (×)" value={zoomFactor} min={1.5} max={5} step={0.1} onChange={setZoomFactor} />
+            <SliderRow label="Seconds per image" value={secondsPerImage} min={1} max={5} step={0.25} onChange={setSecondsPerImage} />
+            <SliderRow label="Drift (off-center)" value={driftAmount} min={0} max={1} step={0.05} onChange={setDriftAmount} />
+            <SliderRow label="Edge feather" value={feather} min={0} max={1} step={0.05} onChange={setFeather} />
+            <SliderRow label="Depth blur" value={depthBlur} min={0} max={1} step={0.05} onChange={setDepthBlur} />
             <p className="text-[10px] text-white/30 leading-snug">
-              Each image zooms from 100% to {Math.round(maxZoom * 100)}% at a constant speed, then an
-              invisible cut continues the motion into the next image.
+              Recursive Droste zoom — each image grows from inside the previous.
+              Drift randomises the emergence point per image for a hallucinogenic tunnel effect.
             </p>
           </div>
 

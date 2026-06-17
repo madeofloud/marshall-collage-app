@@ -5,9 +5,11 @@ export type InfinityZoomItem = { url: string; type: 'image' | 'video' };
 
 export type InfinityZoomProps = {
   items: InfinityZoomItem[];
-  maxZoom: number;           // final magnification multiplier per image, e.g. 30 = 3000%
-  secondsPerImage: number;   // duration each image zooms before the hidden cut (~2–3s)
-  motionBlur: number;        // 0–1: blur ramped over the few frames around the cut to hide the seam
+  zoomFactor: number;       // multiplier per step, e.g. 2.5
+  secondsPerImage: number;  // duration of each zoom step
+  feather: number;          // 0–1: edge softness on nested layers
+  depthBlur: number;        // 0–1: blur strength on distant (small) layers
+  driftAmount: number;      // 0–1: how far off-center each new image emerges
   backgroundColor: string;
 };
 
@@ -15,14 +17,24 @@ export const INFINITY_ZOOM_FPS = 24;
 
 export const defaultInfinityZoomProps: InfinityZoomProps = {
   items: [],
-  maxZoom: 30,
-  secondsPerImage: 2.5,
-  motionBlur: 0.5,
+  zoomFactor: 2.5,
+  secondsPerImage: 2,
+  feather: 0.2,
+  depthBlur: 0.4,
+  driftAmount: 0.35,
   backgroundColor: '#000000',
 };
 
+// Deterministic per-step origin using a simple integer hash.
+function stepOrigin(step: number, driftAmount: number): { ox: number; oy: number } {
+  const s = ((step * 2654435761) >>> 0);
+  const ox = 50 + (((s & 0xFF) / 255) - 0.5) * 2 * driftAmount * 38;
+  const oy = 50 + ((((s >> 8) & 0xFF) / 255) - 0.5) * 2 * driftAmount * 38;
+  return { ox, oy };
+}
+
 export const InfinityZoom: React.FC<InfinityZoomProps> = ({
-  items, maxZoom, secondsPerImage, motionBlur, backgroundColor,
+  items, zoomFactor, secondsPerImage, feather, depthBlur, driftAmount, backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -32,52 +44,74 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
   }
 
   const N = items.length;
-  const MAXZ = Math.max(2, maxZoom);
+  const Z = Math.max(1.5, zoomFactor);
   const stepFrames = Math.max(1, Math.round(secondsPerImage * fps));
   const totalFrames = stepFrames * N;
 
-  // Hidden-cut, single-stream infinite zoom:
-  //  - One image is on screen at a time.
-  //  - It scales 1 → MAXZ exponentially, i.e. at a CONSTANT zoom velocity in
-  //    log space (no easing/acceleration). By the time it reaches MAXZ the
-  //    image is just colour fields / noise and can't be identified.
-  //  - At that peak an invisible hard cut swaps to the next image, which starts
-  //    again at scale 1 and continues at the exact same velocity. Because the
-  //    outgoing frame was abstract and the perceived speed is unbroken, the eye
-  //    reads it as the camera continuing forward through one endless space.
-  //  - Loops after N images (last image cuts back to the first).
   const tf = ((frame % totalFrames) + totalFrames) % totalFrames;
-  const idxF = tf / stepFrames;
-  const index = Math.floor(idxF) % N;
-  const localFrac = idxF - Math.floor(idxF); // 0 → 1 within this image's window
+  const frac = (tf % stepFrames) / stepFrames; // 0 → 1 within current step
+  const step = Math.floor(tf / stepFrames);     // which image is "on top"
 
-  // Exponential scale => constant log-velocity => constant perceived zoom speed.
-  const scale = Math.pow(MAXZ, localFrac);
+  // How many nested layers are visible? Keep going until scale < ~0.02.
+  const depth = Math.ceil(Math.log(1 / 0.02) / Math.log(Z)) + 1;
 
-  // Motion blur ramps up over the few frames either side of the cut (the seam),
-  // and is zero through the middle of the window where the image is sharp.
-  const edge = Math.min(localFrac, 1 - localFrac);
-  const blurWindow = Math.min(0.12, 3 / stepFrames); // ~3 frames each side
-  const blurPx = motionBlur > 0 && edge < blurWindow
-    ? interpolate(edge, [0, blurWindow], [motionBlur * 45, 0], { extrapolateRight: 'clamp' })
-    : 0;
+  // Feather: mask-image stop position. feather=0 → 99.5% (essentially no mask), feather=1 → 40%
+  const maskStop = interpolate(feather, [0, 1], [99.5, 40], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
-  const item = items[index];
-  const mediaStyle: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
+  // Build layer stack from largest (back) to smallest (front).
+  const layers: React.ReactNode[] = [];
 
-  return (
-    <AbsoluteFill style={{ background: backgroundColor, overflow: 'hidden' }}>
+  for (let o = depth; o >= 0; o--) {
+    const scale = Math.pow(Z, frac - o);
+
+    // Only render layers that are potentially visible on screen.
+    if (scale > Z * 2) continue;
+
+    const imgIdx = ((step + o) % N + N) % N;
+    const item = items[imgIdx];
+    const { ox, oy } = stepOrigin(step + o, driftAmount);
+
+    // Depth-of-field blur: blur distant (small) layers more strongly.
+    const blurPx = scale < 1 && depthBlur > 0
+      ? depthBlur * 22 * Math.max(0, (1 - scale)) / Math.max(0.01, scale)
+      : 0;
+
+    // Fade in very small layers to avoid pop-in.
+    const opacity = scale < 0.12
+      ? interpolate(scale, [0.02, 0.12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+      : 1;
+
+    const mediaStyle: React.CSSProperties = {
+      width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+    };
+
+    // Apply feather mask to all layers except the outermost (o === 0 at frac=0 it fills screen).
+    const maskStyle: React.CSSProperties = o > 0 ? {
+      WebkitMaskImage: `radial-gradient(ellipse at 50% 50%, black ${maskStop}%, transparent 100%)`,
+      maskImage: `radial-gradient(ellipse at 50% 50%, black ${maskStop}%, transparent 100%)`,
+    } : {};
+
+    layers.push(
       <AbsoluteFill
+        key={`${step}-${o}`}
         style={{
           transform: `scale(${scale})`,
-          transformOrigin: '50% 50%',
-          filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
+          transformOrigin: `${ox}% ${oy}%`,
+          filter: blurPx > 0.3 ? `blur(${blurPx.toFixed(1)}px)` : undefined,
+          opacity,
+          ...maskStyle,
         }}
       >
         {item.type === 'video'
           ? <Video src={item.url} style={mediaStyle} pauseWhenBuffering loop />
           : <Img src={item.url} style={mediaStyle} />}
       </AbsoluteFill>
+    );
+  }
+
+  return (
+    <AbsoluteFill style={{ background: backgroundColor, overflow: 'hidden' }}>
+      {layers}
     </AbsoluteFill>
   );
 };
