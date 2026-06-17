@@ -5,6 +5,8 @@ import { CollagePreview } from '@/components/CollagePreview';
 import { ControlPanel } from '@/components/ControlPanel';
 import { SessionManager } from '@/components/SessionManager';
 import { StopMotionStudio } from '@/components/StopMotionStudio';
+import { FeedbackLoopStudio } from '@/components/FeedbackLoopStudio';
+import { defaultFeedbackProps } from '@/remotion/src/FeedbackLoop';
 import {
   type PanelOverrides,
   type PanelOverride,
@@ -15,7 +17,7 @@ import { type Alignment } from '@/remotion/src/stopMotionTypes';
 import { generatePanels } from '@/remotion/src/generation';
 
 export default function HomePage() {
-  const [mode, setMode] = useState<'collage' | 'stopmotion'>('collage');
+  const [mode, setMode] = useState<'collage' | 'stopmotion' | 'feedbackloop'>('collage');
   const [images, setImages] = useState<string[]>([]);
   const [background, setBackground] = useState('#121212');
   const [rotationSpeed, setRotationSpeed] = useState(60);
@@ -47,6 +49,24 @@ export default function HomePage() {
   const [exportProgressStopMotion, setExportProgressStopMotion] = useState<number>(0);
   const [exportDownloadUrlStopMotion, setExportDownloadUrlStopMotion] = useState<string | null>(null);
 
+  // Feedback Loop workspace state
+  const [flLayers, setFlLayers] = useState(defaultFeedbackProps.layers);
+  const [flZoomFactor, setFlZoomFactor] = useState(defaultFeedbackProps.zoomFactor);
+  const [flRotationPerLayer, setFlRotationPerLayer] = useState(defaultFeedbackProps.rotationPerLayer);
+  const [flRotationSpeed, setFlRotationSpeed] = useState(defaultFeedbackProps.rotationSpeed);
+  const [flHueShift, setFlHueShift] = useState(defaultFeedbackProps.hueShift);
+  const [flGlowIntensity, setFlGlowIntensity] = useState(defaultFeedbackProps.glowIntensity);
+  const [flBaseColor, setFlBaseColor] = useState(defaultFeedbackProps.baseColor);
+  const [flGlowColor, setFlGlowColor] = useState(defaultFeedbackProps.glowColor);
+  const [flBaseImage, setFlBaseImage] = useState<string | null>(null);
+  const [flDurationSeconds, setFlDurationSeconds] = useState(defaultFeedbackProps.durationSeconds);
+  const [flFormat, setFlFormat] = useState<AspectFormat>('1x1');
+  const [flSizeTier, setFlSizeTier] = useState<SizeTier>('medium');
+  const [flCodec, setFlCodec] = useState<'h264' | 'prores'>('h264');
+  const [isExportingFl, setIsExportingFl] = useState(false);
+  const [exportProgressFl, setExportProgressFl] = useState<number>(0);
+  const [exportDownloadUrlFl, setExportDownloadUrlFl] = useState<string | null>(null);
+
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
   const [activeStopMotionName, setActiveStopMotionName] = useState<string | null>(null);
@@ -59,7 +79,7 @@ export default function HomePage() {
   // Undo history for panel overrides (Cmd+Z / Ctrl+Z)
   const undoStack = useRef<PanelOverrides[]>([]);
 
-  const isAnyExporting = isExporting || isExportingStopMotion;
+  const isAnyExporting = isExporting || isExportingStopMotion || isExportingFl;
 
   // Warn user before leaving while a render is in progress.
   useEffect(() => {
@@ -323,6 +343,29 @@ export default function HomePage() {
     }
   };
 
+  const handleExportFeedbackLoop = async () => {
+    setIsExportingFl(true);
+    setExportProgressFl(0);
+    try {
+      await streamRender(
+        '/api/render-feedbackloop',
+        {
+          layers: flLayers, zoomFactor: flZoomFactor, rotationPerLayer: flRotationPerLayer,
+          rotationSpeed: flRotationSpeed, hueShift: flHueShift, glowIntensity: flGlowIntensity,
+          baseColor: flBaseColor, glowColor: flGlowColor, baseImage: flBaseImage,
+          durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
+        },
+        setExportProgressFl,
+        setExportDownloadUrlFl,
+        setIsExportingFl,
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      alert(msg);
+      setIsExportingFl(false);
+    }
+  };
+
   const currentSessionData = {
     images,
     background,
@@ -342,13 +385,14 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.4</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.5</span>
           </h1>
           <div className="flex gap-1">
             {(
               [
                 ['collage', '360° Collage'],
                 ['stopmotion', 'Object Tracking'],
+                ['feedbackloop', 'Feedback Loop'],
               ] as const
             ).map(([m, label]) => (
               <button
@@ -369,10 +413,8 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           {/* Active project name, shown directly next to the Sessions button */}
           <span className="text-xs text-white/40 truncate max-w-[180px]">
-            {(mode === 'collage' ? activeCollageName : activeStopMotionName)
-              ? mode === 'collage'
-                ? activeCollageName
-                : activeStopMotionName
+            {mode === 'collage' ? (activeCollageName ?? 'Untitled')
+              : mode === 'stopmotion' ? (activeStopMotionName ?? 'Untitled')
               : 'Untitled'}
           </span>
           {mode === 'collage' ? (
@@ -382,14 +424,14 @@ export default function HomePage() {
               kind="collage"
               onActiveChange={setActiveCollageName}
             />
-          ) : (
+          ) : mode === 'stopmotion' ? (
             <SessionManager
               currentData={stopMotionSessionData}
               onLoad={handleLoadStopMotion}
               kind="stopmotion"
               onActiveChange={setActiveStopMotionName}
             />
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -471,6 +513,28 @@ export default function HomePage() {
           exportProgress={exportProgressStopMotion}
           exportDownloadUrl={exportDownloadUrlStopMotion}
           onClearDownload={() => setExportDownloadUrlStopMotion(null)}
+        />
+      )}
+      {mode === 'feedbackloop' && (
+        <FeedbackLoopStudio
+          layers={flLayers} setLayers={setFlLayers}
+          zoomFactor={flZoomFactor} setZoomFactor={setFlZoomFactor}
+          rotationPerLayer={flRotationPerLayer} setRotationPerLayer={setFlRotationPerLayer}
+          rotationSpeed={flRotationSpeed} setRotationSpeed={setFlRotationSpeed}
+          hueShift={flHueShift} setHueShift={setFlHueShift}
+          glowIntensity={flGlowIntensity} setGlowIntensity={setFlGlowIntensity}
+          baseColor={flBaseColor} setBaseColor={setFlBaseColor}
+          glowColor={flGlowColor} setGlowColor={setFlGlowColor}
+          baseImage={flBaseImage} setBaseImage={setFlBaseImage}
+          durationSeconds={flDurationSeconds} setDurationSeconds={setFlDurationSeconds}
+          format={flFormat} setFormat={setFlFormat}
+          sizeTier={flSizeTier} setSizeTier={setFlSizeTier}
+          codec={flCodec} setCodec={setFlCodec}
+          onExport={handleExportFeedbackLoop}
+          isExporting={isExportingFl}
+          exportProgress={exportProgressFl}
+          exportDownloadUrl={exportDownloadUrlFl}
+          onClearDownload={() => setExportDownloadUrlFl(null)}
         />
       )}
     </main>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { Collage } from './Collage';
 import { StopMotion } from './StopMotion';
+import { FeedbackLoop, defaultFeedbackProps, FEEDBACK_FPS } from './FeedbackLoop';
 import {
   ALL_FORMATS,
   ALL_SIZES,
@@ -79,6 +80,28 @@ export const RemotionRoot: React.FC = () => (
                 Math.max(1, props.images.length),
                 props.framesPerImage
               ),
+              props,
+            })}
+          />
+        );
+      })
+    )}
+    {ALL_FORMATS.flatMap((format) =>
+      ALL_SIZES.map((size) => {
+        const { width, height } = getFormatDimensions(format, size);
+        const id = `FeedbackLoop-${format}-${size}`;
+        return (
+          <Composition
+            key={id}
+            id={id}
+            component={FeedbackLoop}
+            durationInFrames={Math.round(defaultFeedbackProps.durationSeconds * FEEDBACK_FPS)}
+            fps={FEEDBACK_FPS}
+            width={width}
+            height={height}
+            defaultProps={defaultFeedbackProps}
+            calculateMetadata={({ props }) => ({
+              durationInFrames: Math.max(1, Math.round(props.durationSeconds * FEEDBACK_FPS)),
               props,
             })}
           />
