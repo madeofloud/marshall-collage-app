@@ -54,9 +54,9 @@ export default function HomePage() {
   const [flZoomFactor, setFlZoomFactor] = useState(defaultFeedbackProps.zoomFactor);
   const [flRotationPerLayer, setFlRotationPerLayer] = useState(defaultFeedbackProps.rotationPerLayer);
   const [flRotationSpeed, setFlRotationSpeed] = useState(defaultFeedbackProps.rotationSpeed);
-  const [flHueShift, setFlHueShift] = useState(defaultFeedbackProps.hueShift);
+  const [flDriftX, setFlDriftX] = useState(defaultFeedbackProps.driftX);
+  const [flDriftY, setFlDriftY] = useState(defaultFeedbackProps.driftY);
   const [flGlowIntensity, setFlGlowIntensity] = useState(defaultFeedbackProps.glowIntensity);
-  const [flBaseColor, setFlBaseColor] = useState(defaultFeedbackProps.baseColor);
   const [flGlowColor, setFlGlowColor] = useState(defaultFeedbackProps.glowColor);
   const [flBaseImage, setFlBaseImage] = useState<string | null>(null);
   const [flDurationSeconds, setFlDurationSeconds] = useState(defaultFeedbackProps.durationSeconds);
@@ -351,8 +351,8 @@ export default function HomePage() {
         '/api/render-feedbackloop',
         {
           layers: flLayers, zoomFactor: flZoomFactor, rotationPerLayer: flRotationPerLayer,
-          rotationSpeed: flRotationSpeed, hueShift: flHueShift, glowIntensity: flGlowIntensity,
-          baseColor: flBaseColor, glowColor: flGlowColor, baseImage: flBaseImage,
+          rotationSpeed: flRotationSpeed, driftX: flDriftX, driftY: flDriftY,
+          glowIntensity: flGlowIntensity, glowColor: flGlowColor, baseImage: flBaseImage,
           durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
         },
         setExportProgressFl,
@@ -520,9 +520,9 @@ export default function HomePage() {
           zoomFactor={flZoomFactor} setZoomFactor={setFlZoomFactor}
           rotationPerLayer={flRotationPerLayer} setRotationPerLayer={setFlRotationPerLayer}
           rotationSpeed={flRotationSpeed} setRotationSpeed={setFlRotationSpeed}
-          hueShift={flHueShift} setHueShift={setFlHueShift}
+          driftX={flDriftX} setDriftX={setFlDriftX}
+          driftY={flDriftY} setDriftY={setFlDriftY}
           glowIntensity={flGlowIntensity} setGlowIntensity={setFlGlowIntensity}
-          baseColor={flBaseColor} setBaseColor={setFlBaseColor}
           glowColor={flGlowColor} setGlowColor={setFlGlowColor}
           baseImage={flBaseImage} setBaseImage={setFlBaseImage}
           durationSeconds={flDurationSeconds} setDurationSeconds={setFlDurationSeconds}

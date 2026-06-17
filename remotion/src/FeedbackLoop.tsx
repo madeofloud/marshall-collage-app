@@ -6,9 +6,9 @@ export type FeedbackLoopProps = {
   zoomFactor: number;
   rotationPerLayer: number;
   rotationSpeed: number;
-  hueShift: number;
+  driftX: number;       // % offset of pivot from center X (-50 to 50)
+  driftY: number;       // % offset of pivot from center Y (-50 to 50)
   glowIntensity: number;
-  baseColor: string;
   glowColor: string;
   baseImage?: string | null;
   durationSeconds: number;
@@ -17,93 +17,86 @@ export type FeedbackLoopProps = {
 export const FEEDBACK_FPS = 25;
 
 export const defaultFeedbackProps: FeedbackLoopProps = {
-  layers: 12,
-  zoomFactor: 0.85,
-  rotationPerLayer: 4,
-  rotationSpeed: 20,
-  hueShift: 15,
-  glowIntensity: 0.35,
-  baseColor: '#000000',
-  glowColor: '#0044ff',
+  layers: 14,
+  zoomFactor: 0.88,
+  rotationPerLayer: 1,
+  rotationSpeed: 8,
+  driftX: 20,
+  driftY: -10,
+  glowIntensity: 0.5,
+  glowColor: '#0066ff',
   baseImage: null,
   durationSeconds: 8,
 };
-
-function hexToHue(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  if (max === min) return 0;
-  const d = max - min;
-  let h =
-    max === r ? (g - b) / d + (g < b ? 6 : 0)
-    : max === g ? (b - r) / d + 2
-    : (r - g) / d + 4;
-  return (h / 6) * 360;
-}
 
 export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
   layers,
   zoomFactor,
   rotationPerLayer,
   rotationSpeed,
-  hueShift,
+  driftX,
+  driftY,
   glowIntensity,
-  baseColor,
   glowColor,
   baseImage,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
   const t = frame / fps;
   const globalRotation = t * rotationSpeed;
-  const baseHue = glowColor.length === 7 ? hexToHue(glowColor) : 200;
+
+  // Pivot point offset in pixels — this is what creates the CRT bulge/drift
+  const pivotPxX = (driftX / 100) * width;
+  const pivotPxY = (driftY / 100) * height;
+  // transformOrigin in % relative to the element (50% = center)
+  const originX = 50 + driftX;
+  const originY = 50 + driftY;
 
   return (
-    <AbsoluteFill style={{ background: baseColor, overflow: 'hidden' }}>
-      {/* Background layer — always visible behind all tunnel frames */}
-      <AbsoluteFill style={{ background: baseColor }} />
-      {baseImage && (
+    <AbsoluteFill style={{ background: '#000000', overflow: 'hidden' }}>
+      {/* Base layer — full size, behind everything */}
+      {baseImage ? (
         <Img
           src={baseImage}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
+      ) : (
+        <AbsoluteFill style={{ background: '#111111' }} />
       )}
 
-      {/* Tunnel frames: i=0 outermost (behind), i=layers-1 innermost (front).
-          Each frame is a scaled+rotated rectangle with a color border only —
-          no solid fill so the background image shows through. */}
+      {/* Feedback layers — each one scaled from the offset pivot point,
+          creating the asymmetric drift/bulge of a real CRT feedback loop.
+          i=0 is just behind the base, i=layers-1 is the deepest copy. */}
       {Array.from({ length: layers }, (_, i) => {
-        const scale = Math.pow(zoomFactor, i + 1);
-        const rotation = globalRotation + rotationPerLayer * (i + 1);
-        const hue = (baseHue + hueShift * i) % 360;
-        // Inner layers slightly more opaque so tunnel has depth
-        const opacity = glowIntensity * (0.4 + 0.6 * (i / layers));
+        const depth = i + 1;
+        const scale = Math.pow(zoomFactor, depth);
+        const rotation = globalRotation + rotationPerLayer * depth;
+        // Color tint gets stronger toward center (deeper layers)
+        const tintOpacity = glowIntensity * (depth / layers);
 
         return (
           <AbsoluteFill
             key={i}
             style={{
+              // Scale+rotate from the offset pivot — this is the CRT effect
               transform: `rotate(${rotation}deg) scale(${scale})`,
-              transformOrigin: 'center center',
+              transformOrigin: `${originX}% ${originY}%`,
+              mixBlendMode: 'screen',
             }}
           >
-            {/* Show base image at each layer scale */}
-            {baseImage && (
+            {baseImage ? (
               <Img
                 src={baseImage}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
+            ) : (
+              <AbsoluteFill style={{ background: '#111111' }} />
             )}
-            {!baseImage && <AbsoluteFill style={{ background: baseColor }} />}
             {/* Color tint */}
             <AbsoluteFill
               style={{
-                background: `hsl(${hue}, 90%, 55%)`,
-                opacity,
-                mixBlendMode: 'screen',
+                background: glowColor,
+                opacity: tintOpacity,
               }}
             />
           </AbsoluteFill>

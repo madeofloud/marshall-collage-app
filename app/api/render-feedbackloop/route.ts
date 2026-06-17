@@ -12,13 +12,13 @@ const REGION = process.env.REMOTION_GCP_REGION || 'europe-west1';
 export async function POST(request: Request) {
   const body = await request.json();
   const {
-    layers, zoomFactor, rotationPerLayer, rotationSpeed, hueShift,
-    glowIntensity, baseColor, glowColor, baseImage, durationSeconds,
+    layers, zoomFactor, rotationPerLayer, rotationSpeed, driftX, driftY,
+    glowIntensity, glowColor, baseImage, durationSeconds,
     format, sizeTier, codec,
   } = body as {
     layers: number; zoomFactor: number; rotationPerLayer: number;
-    rotationSpeed: number; hueShift: number; glowIntensity: number;
-    baseColor: string; glowColor: string; baseImage?: string | null;
+    rotationSpeed: number; driftX: number; driftY: number; glowIntensity: number;
+    glowColor: string; baseImage?: string | null;
     durationSeconds: number; format: AspectFormat; sizeTier: SizeTier;
     codec: 'h264' | 'prores';
   };
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
           serveUrl: SERVE_URL,
           composition: compositionId,
           inputProps: {
-            layers, zoomFactor, rotationPerLayer, rotationSpeed, hueShift,
-            glowIntensity, baseColor, glowColor, baseImage, durationSeconds,
+            layers, zoomFactor, rotationPerLayer, rotationSpeed, driftX, driftY,
+            glowIntensity, glowColor, baseImage, durationSeconds,
           },
           codec: codec as 'h264' | 'prores',
           ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: 'hq' } : {}),

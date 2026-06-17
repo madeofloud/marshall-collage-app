@@ -19,19 +19,9 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 const SliderRow = ({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
+  label, value, min, max, step = 1, onChange,
 }: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (v: number) => void;
+  label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void;
 }) => (
   <div className="space-y-1.5">
     <div className="flex justify-between text-xs">
@@ -40,11 +30,7 @@ const SliderRow = ({
     </div>
     <Slider.Root
       className="relative flex items-center select-none touch-none w-full h-5"
-      value={[value]}
-      onValueChange={(v) => onChange(v[0])}
-      min={min}
-      max={max}
-      step={step}
+      value={[value]} onValueChange={(v) => onChange(v[0])} min={min} max={max} step={step}
     >
       <Slider.Track className="bg-white/10 relative grow rounded-full h-1">
         <Slider.Range className="absolute bg-marshall-gold rounded-full h-full" />
@@ -59,9 +45,9 @@ export type FeedbackLoopStudioProps = {
   zoomFactor: number; setZoomFactor: React.Dispatch<React.SetStateAction<number>>;
   rotationPerLayer: number; setRotationPerLayer: React.Dispatch<React.SetStateAction<number>>;
   rotationSpeed: number; setRotationSpeed: React.Dispatch<React.SetStateAction<number>>;
-  hueShift: number; setHueShift: React.Dispatch<React.SetStateAction<number>>;
+  driftX: number; setDriftX: React.Dispatch<React.SetStateAction<number>>;
+  driftY: number; setDriftY: React.Dispatch<React.SetStateAction<number>>;
   glowIntensity: number; setGlowIntensity: React.Dispatch<React.SetStateAction<number>>;
-  baseColor: string; setBaseColor: React.Dispatch<React.SetStateAction<string>>;
   glowColor: string; setGlowColor: React.Dispatch<React.SetStateAction<string>>;
   baseImage: string | null; setBaseImage: React.Dispatch<React.SetStateAction<string | null>>;
   durationSeconds: number; setDurationSeconds: React.Dispatch<React.SetStateAction<number>>;
@@ -80,9 +66,9 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   zoomFactor, setZoomFactor,
   rotationPerLayer, setRotationPerLayer,
   rotationSpeed, setRotationSpeed,
-  hueShift, setHueShift,
+  driftX, setDriftX,
+  driftY, setDriftY,
   glowIntensity, setGlowIntensity,
-  baseColor, setBaseColor,
   glowColor, setGlowColor,
   baseImage, setBaseImage,
   durationSeconds, setDurationSeconds,
@@ -102,12 +88,6 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) loadFile(file);
-    e.target.value = '';
-  };
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -116,27 +96,24 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   };
 
   const inputProps = {
-    layers, zoomFactor, rotationPerLayer, rotationSpeed, hueShift,
-    glowIntensity, baseColor, glowColor, baseImage, durationSeconds,
+    layers, zoomFactor, rotationPerLayer, rotationSpeed,
+    driftX, driftY, glowIntensity, glowColor, baseImage, durationSeconds,
   };
 
   return (
     <>
-      {/* Canvas — fills all space left of the sidebar */}
+      {/* Canvas */}
       <div
         className="flex-1 flex items-center justify-center bg-neutral-950 overflow-hidden min-w-0"
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
       >
-        <div
-          style={{
-            aspectRatio: `${compWidth} / ${compHeight}`,
-            maxWidth: '100%',
-            maxHeight: '100%',
-            width: compWidth > compHeight ? '100%' : 'auto',
-            height: compWidth <= compHeight ? '100%' : 'auto',
-          }}
-        >
+        <div style={{
+          aspectRatio: `${compWidth} / ${compHeight}`,
+          maxWidth: '100%', maxHeight: '100%',
+          width: compWidth > compHeight ? '100%' : 'auto',
+          height: compWidth <= compHeight ? '100%' : 'auto',
+        }}>
           <Player
             ref={playerRef}
             component={FeedbackLoop}
@@ -146,13 +123,12 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
             compositionWidth={compWidth}
             compositionHeight={compHeight}
             style={{ width: '100%', height: '100%' }}
-            autoPlay
-            loop
+            autoPlay loop
           />
         </div>
       </div>
 
-      {/* Right sidebar — same width as ControlPanel */}
+      {/* Right sidebar */}
       <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto flex-shrink-0">
         <div className="p-5 space-y-6">
 
@@ -163,53 +139,47 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={baseImage} alt="" className="w-full h-24 object-cover rounded" />
-                <button
-                  type="button"
-                  onClick={() => setBaseImage(null)}
-                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition"
-                >
+                <button type="button" onClick={() => setBaseImage(null)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition">
                   ✕
                 </button>
               </div>
             ) : (
               <label
                 className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition text-white/30 hover:text-white/60 text-xs gap-1"
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={(e) => e.preventDefault()}
+                onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => e.preventDefault()}
               >
                 <span className="text-2xl">+</span>
                 Drop or click to upload
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f); e.target.value = ''; }} className="hidden" />
               </label>
             )}
           </div>
 
-          {/* Tunnel */}
+          {/* Feedback */}
           <div className="space-y-4">
-            <SectionTitle>Tunnel</SectionTitle>
+            <SectionTitle>Feedback</SectionTitle>
             <SliderRow label="Layers" value={layers} min={3} max={20} onChange={setLayers} />
             <SliderRow label="Zoom per layer" value={zoomFactor} min={0.65} max={0.99} step={0.01} onChange={setZoomFactor} />
-            <SliderRow label="Rotation per layer (°)" value={rotationPerLayer} min={0} max={20} step={0.5} onChange={setRotationPerLayer} />
-            <SliderRow label="Spin speed (°/s)" value={rotationSpeed} min={0} max={120} step={1} onChange={setRotationSpeed} />
+            <SliderRow label="Drift X" value={driftX} min={-50} max={50} step={1} onChange={setDriftX} />
+            <SliderRow label="Drift Y" value={driftY} min={-50} max={50} step={1} onChange={setDriftY} />
+          </div>
+
+          {/* Motion */}
+          <div className="space-y-4">
+            <SectionTitle>Motion</SectionTitle>
+            <SliderRow label="Spin speed (°/s)" value={rotationSpeed} min={0} max={60} step={1} onChange={setRotationSpeed} />
+            <SliderRow label="Rotation per layer (°)" value={rotationPerLayer} min={0} max={15} step={0.5} onChange={setRotationPerLayer} />
           </div>
 
           {/* Color */}
           <div className="space-y-4">
             <SectionTitle>Color</SectionTitle>
-            <SliderRow label="Hue shift per layer (°)" value={hueShift} min={0} max={60} step={1} onChange={setHueShift} />
             <SliderRow label="Glow intensity" value={glowIntensity} min={0} max={1} step={0.01} onChange={setGlowIntensity} />
-            <div className="flex gap-3 mt-1">
-              <div className="space-y-1 flex-1">
-                <span className="text-xs text-white/70">Base color</span>
-                <input type="color" value={baseColor} onChange={(e) => setBaseColor(e.target.value)}
-                  className="w-full h-8 rounded cursor-pointer border-0 bg-transparent" />
-              </div>
-              <div className="space-y-1 flex-1">
-                <span className="text-xs text-white/70">Glow color</span>
-                <input type="color" value={glowColor} onChange={(e) => setGlowColor(e.target.value)}
-                  className="w-full h-8 rounded cursor-pointer border-0 bg-transparent" />
-              </div>
+            <div className="space-y-1">
+              <span className="text-xs text-white/70">Glow color</span>
+              <input type="color" value={glowColor} onChange={(e) => setGlowColor(e.target.value)}
+                className="w-full h-8 rounded cursor-pointer border-0 bg-transparent" />
             </div>
           </div>
 
@@ -243,7 +213,7 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-1 mb-3">
+            <div className="grid grid-cols-2 gap-1 mb-4">
               {(['h264', 'prores'] as const).map((c) => (
                 <button key={c} type="button" onClick={() => setCodec(c)}
                   className={`py-1.5 rounded text-xs font-medium uppercase transition ${codec === c ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
@@ -259,12 +229,9 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
             ) : isExporting && exportProgress !== undefined ? (
               <div className="space-y-1.5">
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-marshall-gold transition-all duration-500"
-                    style={{ width: `${Math.round(exportProgress * 100)}%` }} />
+                  <div className="h-full bg-marshall-gold transition-all duration-500" style={{ width: `${Math.round(exportProgress * 100)}%` }} />
                 </div>
-                <p className="text-center text-xs text-white/50">
-                  Rendering… {Math.round(exportProgress * 100)}%
-                </p>
+                <p className="text-center text-xs text-white/50">Rendering… {Math.round(exportProgress * 100)}%</p>
               </div>
             ) : (
               <button type="button" onClick={onExport} disabled={isExporting}
