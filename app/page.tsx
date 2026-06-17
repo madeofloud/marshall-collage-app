@@ -342,13 +342,13 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.3</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.4</span>
           </h1>
           <div className="flex gap-1">
             {(
               [
                 ['collage', '360° Collage'],
-                ['stopmotion', 'Stop Motion'],
+                ['stopmotion', 'Object Tracking'],
               ] as const
             ).map(([m, label]) => (
               <button

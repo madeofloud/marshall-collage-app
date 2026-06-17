@@ -235,9 +235,9 @@ export const ControlPanel: React.FC<Props> = ({
                 checked={background === 'transparent'}
                 onChange={(e) => setBackground(e.target.checked ? 'transparent' : '#121212')}
               />
-              <span className="text-xs text-white/70">Transparent bakgrund</span>
+              <span className="text-xs text-white/70">Transparent background</span>
               {background === 'transparent' && (
-                <span className="text-[10px] text-white/40 ml-auto">Kräver ProRes</span>
+                <span className="text-[10px] text-white/40 ml-auto">Requires ProRes</span>
               )}
             </label>
 

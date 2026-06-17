@@ -345,14 +345,14 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
               </div>
             </div>
             <p className="text-xs text-white/50 text-center max-w-md">
-              Klicka på loggans mitt för att sätta <span className="text-marshall-gold">centerpunkt</span>.
-              Justera <span style={{ color: 'rgb(0,200,255)' }}>vinkel &amp; bredd</span> så det blå fältet
-              täcker &quot;Marshall&quot;-texten exakt.
+              Click the center of the logo to set the <span className="text-marshall-gold">anchor point</span>.
+              Adjust <span style={{ color: 'rgb(0,200,255)' }}>angle &amp; width</span> so the blue overlay
+              covers the &quot;Marshall&quot; text exactly.
             </p>
             {activeAlignment && (
               <div className="w-full max-w-md space-y-3 bg-white/5 rounded-lg p-3">
                 <SliderRow
-                  label="Vinkel (°)"
+                  label="Angle (°)"
                   value={activeAlignment.angle ?? 0}
                   min={-30}
                   max={30}
@@ -360,7 +360,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   onChange={(v) => patchActiveAlignment({ angle: v })}
                 />
                 <SliderRow
-                  label="Loggbredd (% av bild)"
+                  label="Logo width (% of image)"
                   value={(activeAlignment.logoWidth ?? 0.15) * 100}
                   min={2}
                   max={60}
@@ -597,7 +597,7 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
               ))}
             </div>
             <SliderRow label="Frames per image" value={framesPerImage} min={2} max={50} onChange={setFramesPerImage} />
-            <SliderRow label="Logo size (% av canvas)" value={targetSize} min={0.05} max={0.4} step={0.01} onChange={setTargetSize} />
+            <SliderRow label="Logo size (% of canvas)" value={targetSize} min={0.05} max={0.4} step={0.01} onChange={setTargetSize} />
             <p className="text-[10px] text-white/40 -mt-1">
               Loggan normaliseras till denna bredd på alla bilder.
             </p>
@@ -635,9 +635,9 @@ export const StopMotionStudio: React.FC<StopMotionStudioProps> = ({
                   else setBackground('#121212');
                 }}
               />
-              <span className="text-xs text-white/70">Transparent bakgrund</span>
+              <span className="text-xs text-white/70">Transparent background</span>
               {background === 'transparent' && (
-                <span className="text-[10px] text-white/40 ml-auto">Kräver ProRes vid export</span>
+                <span className="text-[10px] text-white/40 ml-auto">Requires ProRes</span>
               )}
             </label>
             {background !== 'transparent' && (
