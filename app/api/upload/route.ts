@@ -1,15 +1,12 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
-const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB hard limit
+const MAX_SIZE_BYTES = 200 * 1024 * 1024; // 200 MB (videos)
 const ALLOWED_MIME = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/gif',
-  'image/webp',
+  'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+  'video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo',
 ]);
-const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.avi'];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -58,7 +55,7 @@ export async function POST(request: Request) {
     if (!mimeOk && !extOk) {
       return NextResponse.json(
         {
-          error: `Unsupported file type "${file.type || ext || 'unknown'}". Allowed: PNG, JPG, GIF, WEBP.`,
+          error: `Unsupported file type "${file.type || ext || 'unknown'}". Allowed: PNG, JPG, GIF, WEBP, MP4, MOV, WEBM.`,
           code: 'BAD_TYPE',
         },
         { status: 400 }
@@ -84,9 +81,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Soft warning at 5 MB
+    // Soft warning at 20 MB
     const warning =
-      file.size > 5 * 1024 * 1024
+      file.size > 20 * 1024 * 1024
         ? `Large file (${formatBytes(file.size)}). Upload may take longer and could affect rendering performance.`
         : null;
 

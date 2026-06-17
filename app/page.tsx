@@ -59,6 +59,10 @@ export default function HomePage() {
   const [flGlowIntensity, setFlGlowIntensity] = useState(defaultFeedbackProps.glowIntensity);
   const [flGlowColor, setFlGlowColor] = useState(defaultFeedbackProps.glowColor);
   const [flBaseImage, setFlBaseImage] = useState<string | null>(null);
+  const [flBaseVideo, setFlBaseVideo] = useState<string | null>(null);
+  const [flBulgeAmount, setFlBulgeAmount] = useState(defaultFeedbackProps.bulgeAmount);
+  const [flScanlineOpacity, setFlScanlineOpacity] = useState(defaultFeedbackProps.scanlineOpacity);
+  const [flScanlineSpeed, setFlScanlineSpeed] = useState(defaultFeedbackProps.scanlineSpeed);
   const [flDurationSeconds, setFlDurationSeconds] = useState(defaultFeedbackProps.durationSeconds);
   const [flFormat, setFlFormat] = useState<AspectFormat>('1x1');
   const [flSizeTier, setFlSizeTier] = useState<SizeTier>('medium');
@@ -352,7 +356,9 @@ export default function HomePage() {
         {
           layers: flLayers, zoomFactor: flZoomFactor, rotationPerLayer: flRotationPerLayer,
           rotationSpeed: flRotationSpeed, driftX: flDriftX, driftY: flDriftY,
-          glowIntensity: flGlowIntensity, glowColor: flGlowColor, baseImage: flBaseImage,
+          glowIntensity: flGlowIntensity, glowColor: flGlowColor,
+          baseImage: flBaseImage, baseVideo: flBaseVideo,
+          bulgeAmount: flBulgeAmount, scanlineOpacity: flScanlineOpacity, scanlineSpeed: flScanlineSpeed,
           durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
         },
         setExportProgressFl,
@@ -385,7 +391,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.5</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.7</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -525,6 +531,10 @@ export default function HomePage() {
           glowIntensity={flGlowIntensity} setGlowIntensity={setFlGlowIntensity}
           glowColor={flGlowColor} setGlowColor={setFlGlowColor}
           baseImage={flBaseImage} setBaseImage={setFlBaseImage}
+          baseVideo={flBaseVideo} setBaseVideo={setFlBaseVideo}
+          bulgeAmount={flBulgeAmount} setBulgeAmount={setFlBulgeAmount}
+          scanlineOpacity={flScanlineOpacity} setScanlineOpacity={setFlScanlineOpacity}
+          scanlineSpeed={flScanlineSpeed} setScanlineSpeed={setFlScanlineSpeed}
           durationSeconds={flDurationSeconds} setDurationSeconds={setFlDurationSeconds}
           format={flFormat} setFormat={setFlFormat}
           sizeTier={flSizeTier} setSizeTier={setFlSizeTier}
