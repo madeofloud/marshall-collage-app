@@ -484,7 +484,7 @@ export default function HomePage() {
             basePanelOverride={basePanelOverride}
           />
         </>
-      ) : (
+      ) : mode === 'stopmotion' ? (
         <StopMotionStudio
           images={smImages}
           setImages={setSmImages}
@@ -514,8 +514,7 @@ export default function HomePage() {
           exportDownloadUrl={exportDownloadUrlStopMotion}
           onClearDownload={() => setExportDownloadUrlStopMotion(null)}
         />
-      )}
-      {mode === 'feedbackloop' && (
+      ) : (
         <FeedbackLoopStudio
           layers={flLayers} setLayers={setFlLayers}
           zoomFactor={flZoomFactor} setZoomFactor={setFlZoomFactor}
