@@ -29,6 +29,21 @@ export const defaultFeedbackProps: FeedbackLoopProps = {
   durationSeconds: 8,
 };
 
+function hexToHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max === min) return 0;
+  const d = max - min;
+  let h =
+    max === r ? (g - b) / d + (g < b ? 6 : 0)
+    : max === g ? (b - r) / d + 2
+    : (r - g) / d + 4;
+  return (h / 6) * 360;
+}
+
 export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
   layers,
   zoomFactor,
@@ -44,27 +59,32 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
   const { fps } = useVideoConfig();
   const t = frame / fps;
   const globalRotation = t * rotationSpeed;
+  const baseHue = glowColor.length === 7 ? hexToHue(glowColor) : 200;
 
-  return (
-    <AbsoluteFill style={{ background: baseColor, overflow: 'hidden' }}>
-      {/* Base layer */}
-      {baseImage ? (
+  const baseContent = (
+    <>
+      <AbsoluteFill style={{ background: baseColor }} />
+      {baseImage && (
         <Img
           src={baseImage}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
-      ) : (
-        <AbsoluteFill style={{ background: baseColor }} />
       )}
+    </>
+  );
 
-      {/* Recursive tunnel layers — rendered smallest first so outermost is on top */}
+  return (
+    <AbsoluteFill style={{ background: baseColor, overflow: 'hidden' }}>
+      {/* Background — visible only in corners where no layer reaches */}
+      {baseContent}
+
+      {/* Layers: i=0 is outermost (rendered first = behind),
+          i=layers-1 is innermost (rendered last = in front).
+          Each layer shows the base content + color tint at decreasing scale. */}
       {Array.from({ length: layers }, (_, i) => {
-        const depth = layers - i; // depth 'layers' = smallest/innermost, 1 = outermost
-        const scale = Math.pow(zoomFactor, depth);
-        const rotation = globalRotation + rotationPerLayer * depth;
-        // Hue cycles through spectrum as layers deepen
-        const hue = (parseFloat(glowColor.replace('#', '0x').slice(0, -4) || '0') + hueShift * depth) % 360;
-        const layerGlow = glowIntensity * (1 - (depth - 1) / layers);
+        const scale = Math.pow(zoomFactor, i + 1);
+        const rotation = globalRotation + rotationPerLayer * (i + 1);
+        const hue = (baseHue + hueShift * i) % 360;
 
         return (
           <AbsoluteFill
@@ -72,22 +92,14 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
             style={{
               transform: `rotate(${rotation}deg) scale(${scale})`,
               transformOrigin: 'center center',
-              willChange: 'transform',
             }}
           >
-            {/* Content at this layer */}
-            <AbsoluteFill style={{ background: baseColor }} />
-            {baseImage && (
-              <Img
-                src={baseImage}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            )}
-            {/* Color tint */}
+            {baseContent}
+            {/* Color tint shifts hue per layer */}
             <AbsoluteFill
               style={{
                 background: `hsl(${hue}, 90%, 55%)`,
-                opacity: layerGlow,
+                opacity: glowIntensity,
                 mixBlendMode: 'screen',
               }}
             />
