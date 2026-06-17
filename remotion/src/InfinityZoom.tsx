@@ -5,10 +5,11 @@ export type InfinityZoomItem = { url: string; type: 'image' | 'video' };
 
 export type InfinityZoomProps = {
   items: InfinityZoomItem[];
-  maxZoom: number;           // final magnification multiplier per image, e.g. 30 = 3000%
-  secondsPerImage: number;   // duration each image zooms before the hidden cut (~2–3s)
-  motionBlur: number;        // 0–1: blur ramped over the few frames around the cut to hide the seam
-  driftAmount: number;       // 0–1: how far off-center each image zooms (varies per image)
+  zoomFactor: number;       // how much the nested portal grows per step (e.g. 2.2)
+  secondsPerImage: number;  // duration of each zoom step
+  feather: number;          // 0–1: softness of the nested rectangle edges
+  depthBlur: number;        // 0–1: blur on distant (small) layers
+  driftAmount: number;      // 0–1: how far off-center each portal sits
   backgroundColor: string;
 };
 
@@ -16,24 +17,25 @@ export const INFINITY_ZOOM_FPS = 24;
 
 export const defaultInfinityZoomProps: InfinityZoomProps = {
   items: [],
-  maxZoom: 30,
-  secondsPerImage: 2.5,
-  motionBlur: 0.5,
-  driftAmount: 0.3,
+  zoomFactor: 2.2,
+  secondsPerImage: 1.5,
+  feather: 0.06,
+  depthBlur: 0.15,
+  driftAmount: 0.2,
   backgroundColor: '#000000',
 };
 
-// Deterministic per-image off-center origin using a simple integer hash, so
-// each image zooms toward a slightly different point instead of dead center.
-function imageOrigin(index: number, driftAmount: number): { ox: number; oy: number } {
-  const s = ((index * 2654435761) >>> 0);
-  const ox = 50 + (((s & 0xFF) / 255) - 0.5) * 2 * driftAmount * 35;
-  const oy = 50 + ((((s >> 8) & 0xFF) / 255) - 0.5) * 2 * driftAmount * 35;
+// Deterministic per-image off-center origin using a simple integer hash, so the
+// nested portal sits at a slightly different point per image instead of dead center.
+function layerOrigin(idx: number, driftAmount: number): { ox: number; oy: number } {
+  const s = ((idx * 2654435761) >>> 0);
+  const ox = 50 + (((s & 0xFF) / 255) - 0.5) * 2 * driftAmount * 30;
+  const oy = 50 + ((((s >> 8) & 0xFF) / 255) - 0.5) * 2 * driftAmount * 30;
   return { ox, oy };
 }
 
 export const InfinityZoom: React.FC<InfinityZoomProps> = ({
-  items, maxZoom, secondsPerImage, motionBlur, driftAmount, backgroundColor,
+  items, zoomFactor, secondsPerImage, feather, depthBlur, driftAmount, backgroundColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -43,56 +45,90 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
   }
 
   const N = items.length;
-  const MAXZ = Math.max(2, maxZoom);
+  const Z = Math.max(1.3, zoomFactor);
   const stepFrames = Math.max(1, Math.round(secondsPerImage * fps));
   const totalFrames = stepFrames * N;
 
-  // Hidden-cut, single-stream infinite zoom:
-  //  - One image is on screen at a time.
-  //  - It scales 1 → MAXZ exponentially, i.e. at a CONSTANT zoom velocity in
-  //    log space (no easing/acceleration). By the time it reaches MAXZ the
-  //    image is just colour fields / noise and can't be identified.
-  //  - At that peak an invisible hard cut swaps to the next image, which starts
-  //    again at scale 1 and continues at the exact same velocity. Because the
-  //    outgoing frame was abstract and the perceived speed is unbroken, the eye
-  //    reads it as the camera continuing forward through one endless space.
-  //  - Each image zooms toward a slightly different off-center point (drift) so
-  //    the tunnel varies and feels more hallucinogenic.
-  //  - Loops after N images (last image cuts back to the first).
+  // Recursive / Droste infinite zoom:
+  //  - The current image fills the screen and scales up continuously.
+  //  - The NEXT image is nested as a smaller rectangle centred (or drifted) on
+  //    top of it, scaling up at the exact same rate.
+  //  - Each deeper layer (o) is the same image shrunk by Z^o so it reads as a
+  //    rectangular "portal" embedded in the layer in front of it.
+  //  - When a layer reaches full screen the modulo recursion swaps it out
+  //    seamlessly (invisible cut), so the camera never appears to stop.
+  //  - Exponential scale => constant log-velocity => constant perceived speed.
   const tf = ((frame % totalFrames) + totalFrames) % totalFrames;
-  const idxF = tf / stepFrames;
-  const index = Math.floor(idxF) % N;
-  const localFrac = idxF - Math.floor(idxF); // 0 → 1 within this image's window
+  const frac = (tf % stepFrames) / stepFrames; // 0 → 1 within the current step
+  const step = Math.floor(tf / stepFrames);     // which image currently fills the screen
 
-  // Exponential scale => constant log-velocity => constant perceived zoom speed.
-  const scale = Math.pow(MAXZ, localFrac);
+  // How many nested layers until the deepest is too small to matter.
+  const depth = Math.ceil(Math.log(1 / 0.015) / Math.log(Z)) + 1;
 
-  // Motion blur ramps up over the few frames either side of the cut (the seam),
-  // and is zero through the middle of the window where the image is sharp.
-  const edge = Math.min(localFrac, 1 - localFrac);
-  const blurWindow = Math.min(0.12, 3 / stepFrames); // ~3 frames each side
-  const blurPx = motionBlur > 0 && edge < blurWindow
-    ? interpolate(edge, [0, blurWindow], [motionBlur * 45, 0], { extrapolateRight: 'clamp' })
-    : 0;
+  // Rectangular edge feather (fades all four sides). feather 0 → hard edges.
+  const f = feather * 9; // percent inset
+  const rectMask = f > 0.01
+    ? {
+        WebkitMaskImage:
+          `linear-gradient(to right, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%), ` +
+          `linear-gradient(to bottom, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%)`,
+        WebkitMaskComposite: 'source-in',
+        maskImage:
+          `linear-gradient(to right, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%), ` +
+          `linear-gradient(to bottom, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%)`,
+        maskComposite: 'intersect' as const,
+      }
+    : {};
 
-  const { ox, oy } = imageOrigin(index, driftAmount);
+  const mediaStyle: React.CSSProperties = {
+    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+  };
 
-  const item = items[index];
-  const mediaStyle: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
+  // Build layer stack from largest (back) to smallest (front).
+  const layers: React.ReactNode[] = [];
 
-  return (
-    <AbsoluteFill style={{ background: backgroundColor, overflow: 'hidden' }}>
+  for (let o = depth; o >= 0; o--) {
+    const scale = Math.pow(Z, frac - o);
+
+    // Skip layers that have grown past the screen or are vanishingly small.
+    if (scale > Z * 1.5) continue;
+
+    const imgIdx = ((step + o) % N + N) % N;
+    const item = items[imgIdx];
+    const { ox, oy } = layerOrigin(step + o, driftAmount);
+
+    // Depth-of-field blur on the small (distant) portals only.
+    const blurPx = scale < 1 && depthBlur > 0
+      ? depthBlur * 16 * Math.max(0, 1 - scale) / Math.max(0.04, scale)
+      : 0;
+
+    // Fade the deepest tiny layers in to avoid pop-in.
+    const opacity = scale < 0.1
+      ? interpolate(scale, [0.015, 0.1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+      : 1;
+
+    layers.push(
       <AbsoluteFill
+        key={`${step}-${o}`}
         style={{
           transform: `scale(${scale})`,
           transformOrigin: `${ox}% ${oy}%`,
-          filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
+          filter: blurPx > 0.3 ? `blur(${blurPx.toFixed(1)}px)` : undefined,
+          opacity,
+          // The outermost layer fills the frame; nested portals get feathered edges.
+          ...(o > 0 ? rectMask : {}),
         }}
       >
         {item.type === 'video'
           ? <Video src={item.url} style={mediaStyle} pauseWhenBuffering loop />
           : <Img src={item.url} style={mediaStyle} />}
       </AbsoluteFill>
+    );
+  }
+
+  return (
+    <AbsoluteFill style={{ background: backgroundColor, overflow: 'hidden' }}>
+      {layers}
     </AbsoluteFill>
   );
 };

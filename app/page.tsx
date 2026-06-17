@@ -82,9 +82,10 @@ export default function HomePage() {
 
   // Infinity Zoom workspace state
   const [izItems, setIzItems] = useState<InfinityZoomItem[]>(defaultInfinityZoomProps.items);
-  const [izMaxZoom, setIzMaxZoom] = useState(defaultInfinityZoomProps.maxZoom);
+  const [izZoomFactor, setIzZoomFactor] = useState(defaultInfinityZoomProps.zoomFactor);
   const [izSecondsPerImage, setIzSecondsPerImage] = useState(defaultInfinityZoomProps.secondsPerImage);
-  const [izMotionBlur, setIzMotionBlur] = useState(defaultInfinityZoomProps.motionBlur);
+  const [izFeather, setIzFeather] = useState(defaultInfinityZoomProps.feather);
+  const [izDepthBlur, setIzDepthBlur] = useState(defaultInfinityZoomProps.depthBlur);
   const [izDriftAmount, setIzDriftAmount] = useState(defaultInfinityZoomProps.driftAmount);
   const [izBackgroundColor, setIzBackgroundColor] = useState(defaultInfinityZoomProps.backgroundColor);
   const [izFormat, setIzFormat] = useState<AspectFormat>('1x1');
@@ -305,16 +306,17 @@ export default function HomePage() {
   };
 
   const infinityZoomSessionData = {
-    items: izItems, maxZoom: izMaxZoom, secondsPerImage: izSecondsPerImage,
-    motionBlur: izMotionBlur, driftAmount: izDriftAmount,
+    items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
+    feather: izFeather, depthBlur: izDepthBlur, driftAmount: izDriftAmount,
     backgroundColor: izBackgroundColor, format: izFormat, sizeTier: izSizeTier, codec: izCodec,
   };
 
   const handleLoadInfinityZoom = (data: Record<string, unknown>) => {
     setIzItems((data.items as InfinityZoomItem[]) ?? []);
-    setIzMaxZoom((data.maxZoom as number) ?? defaultInfinityZoomProps.maxZoom);
+    setIzZoomFactor((data.zoomFactor as number) ?? defaultInfinityZoomProps.zoomFactor);
     setIzSecondsPerImage((data.secondsPerImage as number) ?? defaultInfinityZoomProps.secondsPerImage);
-    setIzMotionBlur((data.motionBlur as number) ?? defaultInfinityZoomProps.motionBlur);
+    setIzFeather((data.feather as number) ?? defaultInfinityZoomProps.feather);
+    setIzDepthBlur((data.depthBlur as number) ?? defaultInfinityZoomProps.depthBlur);
     setIzDriftAmount((data.driftAmount as number) ?? defaultInfinityZoomProps.driftAmount);
     setIzBackgroundColor((data.backgroundColor as string) ?? defaultInfinityZoomProps.backgroundColor);
     setIzFormat((data.format as AspectFormat) ?? '1x1');
@@ -449,8 +451,8 @@ export default function HomePage() {
       await streamRender(
         '/api/render-infinityzoom',
         {
-          items: izItems, maxZoom: izMaxZoom, secondsPerImage: izSecondsPerImage,
-          motionBlur: izMotionBlur, driftAmount: izDriftAmount,
+          items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
+          feather: izFeather, depthBlur: izDepthBlur, driftAmount: izDriftAmount,
           backgroundColor: izBackgroundColor, format: izFormat, sizeTier: izSizeTier, codec: izCodec,
         },
         setExportProgressIz,
@@ -483,7 +485,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">5.6</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">5.7</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -657,9 +659,10 @@ export default function HomePage() {
       ) : (
         <InfinityZoomStudio
           items={izItems} setItems={setIzItems}
-          maxZoom={izMaxZoom} setMaxZoom={setIzMaxZoom}
+          zoomFactor={izZoomFactor} setZoomFactor={setIzZoomFactor}
           secondsPerImage={izSecondsPerImage} setSecondsPerImage={setIzSecondsPerImage}
-          motionBlur={izMotionBlur} setMotionBlur={setIzMotionBlur}
+          feather={izFeather} setFeather={setIzFeather}
+          depthBlur={izDepthBlur} setDepthBlur={setIzDepthBlur}
           driftAmount={izDriftAmount} setDriftAmount={setIzDriftAmount}
           backgroundColor={izBackgroundColor} setBackgroundColor={setIzBackgroundColor}
           format={izFormat} setFormat={setIzFormat}
