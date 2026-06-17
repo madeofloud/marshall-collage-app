@@ -151,37 +151,56 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
       <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto flex-shrink-0">
         <div className="p-5 space-y-6">
 
-          {/* Media upload */}
+          {/* Format — top */}
+          <div>
+            <SectionTitle>Format</SectionTitle>
+            <div className="grid grid-cols-5 gap-1">
+              {ALL_FORMATS.map((f) => (
+                <button key={f} type="button" onClick={() => setFormat(f)}
+                  className={`py-2 rounded text-xs font-medium transition ${format === f ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+                  {FORMAT_LABELS[f]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Media upload — same size/style as ImageUploader */}
           <div>
             <SectionTitle>Base media</SectionTitle>
             {hasMedia ? (
-              <div className="relative">
+              <div className="relative rounded-lg overflow-hidden">
                 {baseVideo ? (
-                  <video src={baseVideo} className="w-full h-24 object-cover rounded" muted autoPlay loop playsInline />
+                  <video src={baseVideo} className="w-full h-40 object-cover" muted autoPlay loop playsInline />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={baseImage!} alt="" className="w-full h-24 object-cover rounded" />
+                  <img src={baseImage!} alt="" className="w-full h-40 object-cover" />
                 )}
                 <button type="button" onClick={clearMedia}
-                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition">
+                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition">
                   ✕
                 </button>
-                <span className="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white/70 px-1 rounded">
+                <span className="absolute bottom-2 left-2 text-[9px] bg-black/60 text-white/70 px-1.5 py-0.5 rounded">
                   {baseVideo ? 'VIDEO' : 'IMAGE'}
                 </span>
               </div>
             ) : (
               <label
-                className={`flex flex-col items-center justify-center w-full h-24 border border-dashed rounded cursor-pointer transition text-xs gap-1 ${
-                  uploading ? 'border-white/40 text-white/60' : 'border-white/20 text-white/30 hover:border-white/40 hover:text-white/60'
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition block ${
+                  uploading ? 'border-white/40' : 'border-white/20 hover:border-white/40'
                 }`}
                 onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => e.preventDefault()}
               >
-                {uploading ? (
-                  <><span className="text-xl animate-spin">⟳</span>Uploading…</>
-                ) : (
-                  <><span className="text-2xl">+</span>Drop or click — image or video</>
-                )}
+                <div className="flex flex-col items-center justify-center gap-1.5">
+                  {uploading ? (
+                    <><span className="text-2xl animate-spin block">⟳</span><span className="text-sm text-white/70">Uploading…</span></>
+                  ) : (
+                    <>
+                      <span className="text-2xl">📁</span>
+                      <p className="text-sm text-white/70">Drag & drop or click to upload</p>
+                      <p className="text-xs text-white/40 mt-1">Image or video · max 200MB</p>
+                    </>
+                  )}
+                </div>
                 <input type="file" accept="image/*,video/*" onChange={handleFileInput} className="hidden" disabled={uploading} />
               </label>
             )}
@@ -227,19 +246,6 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
           <div className="space-y-4">
             <SectionTitle>Duration</SectionTitle>
             <SliderRow label="Seconds" value={durationSeconds} min={2} max={30} step={1} onChange={setDurationSeconds} />
-          </div>
-
-          {/* Format */}
-          <div>
-            <SectionTitle>Format</SectionTitle>
-            <div className="grid grid-cols-5 gap-1">
-              {ALL_FORMATS.map((f) => (
-                <button key={f} type="button" onClick={() => setFormat(f)}
-                  className={`py-2 rounded text-xs font-medium transition ${format === f ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
-                  {FORMAT_LABELS[f]}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Export */}

@@ -17,7 +17,7 @@ type Props = {
   onLoad: (data: SessionData) => void;
   // Which workspace these sessions belong to. Sessions are filtered by kind so
   // 360° Collage and Stop Motion keep separate project lists.
-  kind: 'collage' | 'stopmotion';
+  kind: 'collage' | 'stopmotion' | 'feedbackloop';
   // Reports the active (loaded/saved) session name so the header can show it.
   onActiveChange?: (name: string | null) => void;
 };
@@ -26,7 +26,7 @@ type Props = {
 // "<slug>_<timestamp>" ids (which are always collage).
 function parseId(id: string): { kind: string; name: string } {
   const parts = id.split('__');
-  if (parts.length >= 3 && (parts[0] === 'collage' || parts[0] === 'stopmotion')) {
+  if (parts.length >= 3 && (parts[0] === 'collage' || parts[0] === 'stopmotion' || parts[0] === 'feedbackloop')) {
     return { kind: parts[0], name: parts.slice(1, -1).join('__').replace(/_/g, ' ') };
   }
   return { kind: 'collage', name: id.replace(/_\d+$/, '').replace(/_/g, ' ') || id };

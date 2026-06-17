@@ -74,6 +74,7 @@ export default function HomePage() {
   // Active (loaded/saved) session names shown in the header, per workspace.
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
   const [activeStopMotionName, setActiveStopMotionName] = useState<string | null>(null);
+  const [activeFeedbackLoopName, setActiveFeedbackLoopName] = useState<string | null>(null);
 
   const selectedOverride = useMemo<PanelOverride | null>(
     () => (selectedPanelId ? panelOverrides[selectedPanelId] ?? null : null),
@@ -254,6 +255,35 @@ export default function HomePage() {
 
   const visibleSmImages = smImages.filter((url) => !smHiddenImages.includes(url));
 
+  const feedbackLoopSessionData = {
+    layers: flLayers, zoomFactor: flZoomFactor, rotationPerLayer: flRotationPerLayer,
+    rotationSpeed: flRotationSpeed, driftX: flDriftX, driftY: flDriftY,
+    glowIntensity: flGlowIntensity, glowColor: flGlowColor,
+    baseImage: flBaseImage, baseVideo: flBaseVideo,
+    bulgeAmount: flBulgeAmount, scanlineOpacity: flScanlineOpacity, scanlineSpeed: flScanlineSpeed,
+    durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
+  };
+
+  const handleLoadFeedbackLoop = (data: Record<string, unknown>) => {
+    setFlLayers((data.layers as number) ?? defaultFeedbackProps.layers);
+    setFlZoomFactor((data.zoomFactor as number) ?? defaultFeedbackProps.zoomFactor);
+    setFlRotationPerLayer((data.rotationPerLayer as number) ?? defaultFeedbackProps.rotationPerLayer);
+    setFlRotationSpeed((data.rotationSpeed as number) ?? defaultFeedbackProps.rotationSpeed);
+    setFlDriftX((data.driftX as number) ?? defaultFeedbackProps.driftX);
+    setFlDriftY((data.driftY as number) ?? defaultFeedbackProps.driftY);
+    setFlGlowIntensity((data.glowIntensity as number) ?? defaultFeedbackProps.glowIntensity);
+    setFlGlowColor((data.glowColor as string) ?? defaultFeedbackProps.glowColor);
+    setFlBaseImage((data.baseImage as string | null) ?? null);
+    setFlBaseVideo((data.baseVideo as string | null) ?? null);
+    setFlBulgeAmount((data.bulgeAmount as number) ?? defaultFeedbackProps.bulgeAmount);
+    setFlScanlineOpacity((data.scanlineOpacity as number) ?? defaultFeedbackProps.scanlineOpacity);
+    setFlScanlineSpeed((data.scanlineSpeed as number) ?? defaultFeedbackProps.scanlineSpeed);
+    setFlDurationSeconds((data.durationSeconds as number) ?? defaultFeedbackProps.durationSeconds);
+    setFlFormat((data.format as AspectFormat) ?? '1x1');
+    setFlSizeTier((data.sizeTier as SizeTier) ?? 'medium');
+    setFlCodec((data.codec as 'h264' | 'prores') ?? 'h264');
+  };
+
   const streamRender = async (
     url: string,
     bodyData: object,
@@ -391,7 +421,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.7</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">4.8</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -421,7 +451,7 @@ export default function HomePage() {
           <span className="text-xs text-white/40 truncate max-w-[180px]">
             {mode === 'collage' ? (activeCollageName ?? 'Untitled')
               : mode === 'stopmotion' ? (activeStopMotionName ?? 'Untitled')
-              : 'Untitled'}
+              : (activeFeedbackLoopName ?? 'Untitled')}
           </span>
           {mode === 'collage' ? (
             <SessionManager
@@ -437,7 +467,14 @@ export default function HomePage() {
               kind="stopmotion"
               onActiveChange={setActiveStopMotionName}
             />
-          ) : null}
+          ) : (
+            <SessionManager
+              currentData={feedbackLoopSessionData}
+              onLoad={handleLoadFeedbackLoop}
+              kind="feedbackloop"
+              onActiveChange={setActiveFeedbackLoopName}
+            />
+          )}
         </div>
       </header>
 
