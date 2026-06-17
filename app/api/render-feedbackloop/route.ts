@@ -14,13 +14,13 @@ export async function POST(request: Request) {
   const {
     layers, zoomFactor, rotationPerLayer, rotationSpeed, driftX, driftY,
     glowIntensity, glowColor, baseImage, baseVideo,
-    bulgeAmount, scanlineOpacity, scanlineSpeed, durationSeconds,
+    bulgeAmount, scanlineOpacity, scanlineSpeed, featherAmount, durationSeconds,
     format, sizeTier, codec,
   } = body as {
     layers: number; zoomFactor: number; rotationPerLayer: number;
     rotationSpeed: number; driftX: number; driftY: number; glowIntensity: number;
     glowColor: string; baseImage?: string | null; baseVideo?: string | null;
-    bulgeAmount: number; scanlineOpacity: number; scanlineSpeed: number;
+    bulgeAmount: number; scanlineOpacity: number; scanlineSpeed: number; featherAmount: number;
     durationSeconds: number; format: AspectFormat; sizeTier: SizeTier;
     codec: 'h264' | 'prores';
   };
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
           inputProps: {
             layers, zoomFactor, rotationPerLayer, rotationSpeed, driftX, driftY,
             glowIntensity, glowColor, baseImage, baseVideo,
-            bulgeAmount, scanlineOpacity, scanlineSpeed, durationSeconds,
+            bulgeAmount, scanlineOpacity, scanlineSpeed, featherAmount, durationSeconds,
           },
           codec: codec as 'h264' | 'prores',
           ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: 'hq' } : {}),

@@ -45,6 +45,7 @@ export type FeedbackLoopStudioProps = {
   bulgeAmount: number; setBulgeAmount: React.Dispatch<React.SetStateAction<number>>;
   scanlineOpacity: number; setScanlineOpacity: React.Dispatch<React.SetStateAction<number>>;
   scanlineSpeed: number; setScanlineSpeed: React.Dispatch<React.SetStateAction<number>>;
+  featherAmount: number; setFeatherAmount: React.Dispatch<React.SetStateAction<number>>;
   durationSeconds: number; setDurationSeconds: React.Dispatch<React.SetStateAction<number>>;
   format: AspectFormat; setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
   sizeTier: SizeTier; setSizeTier: React.Dispatch<React.SetStateAction<SizeTier>>;
@@ -62,7 +63,7 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   driftX, setDriftX, driftY, setDriftY,
   glowIntensity, setGlowIntensity, glowColor, setGlowColor,
   baseImage, setBaseImage, baseVideo, setBaseVideo,
-  bulgeAmount, setBulgeAmount, scanlineOpacity, setScanlineOpacity, scanlineSpeed, setScanlineSpeed,
+  bulgeAmount, setBulgeAmount, scanlineOpacity, setScanlineOpacity, scanlineSpeed, setScanlineSpeed, featherAmount, setFeatherAmount,
   durationSeconds, setDurationSeconds,
   format, setFormat, sizeTier, setSizeTier, codec, setCodec,
   onExport, isExporting, exportProgress, exportDownloadUrl, onClearDownload,
@@ -117,7 +118,7 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   const inputProps = {
     layers, zoomFactor, rotationPerLayer, rotationSpeed, driftX, driftY,
     glowIntensity, glowColor, baseImage, baseVideo,
-    bulgeAmount, scanlineOpacity, scanlineSpeed, durationSeconds,
+    bulgeAmount, scanlineOpacity, scanlineSpeed, featherAmount, durationSeconds,
   };
 
   return (
@@ -222,6 +223,7 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
             <SliderRow label="Bulge" value={bulgeAmount} min={0} max={1} step={0.01} onChange={setBulgeAmount} />
             <SliderRow label="Scanline opacity" value={scanlineOpacity} min={0} max={1} step={0.01} onChange={setScanlineOpacity} />
             <SliderRow label="Scanline speed (px/s)" value={scanlineSpeed} min={0} max={200} step={5} onChange={setScanlineSpeed} />
+            <SliderRow label="Edge feather" value={featherAmount} min={0} max={1} step={0.01} onChange={setFeatherAmount} />
           </div>
 
           {/* Motion */}

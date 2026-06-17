@@ -15,6 +15,7 @@ export type FeedbackLoopProps = {
   bulgeAmount: number;       // 0–1: CRT screen rounding + vignette
   scanlineOpacity: number;   // 0–1
   scanlineSpeed: number;     // px/s scrolling
+  featherAmount: number;     // 0–1: edge softness per layer
   durationSeconds: number;
 };
 
@@ -34,6 +35,7 @@ export const defaultFeedbackProps: FeedbackLoopProps = {
   bulgeAmount: 0.4,
   scanlineOpacity: 0.25,
   scanlineSpeed: 60,
+  featherAmount: 0.3,
   durationSeconds: 8,
 };
 
@@ -51,6 +53,7 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
   bulgeAmount,
   scanlineOpacity,
   scanlineSpeed,
+  featherAmount,
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -102,6 +105,14 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
         const rotation = globalRotation + rotationPerLayer * depth;
         const tintOpacity = glowIntensity * (depth / layers);
 
+        // Feather: radial gradient mask, inner solid region shrinks as feather increases
+        const featherStop = featherAmount > 0
+          ? `${Math.max(5, 100 - featherAmount * 80)}%`
+          : '100%';
+        const maskImage = featherAmount > 0
+          ? `radial-gradient(ellipse at center, black ${featherStop}, transparent 100%)`
+          : undefined;
+
         return (
           <AbsoluteFill
             key={i}
@@ -109,9 +120,10 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
               transform: `rotate(${rotation}deg) scale(${scale})`,
               transformOrigin: `${originX}% ${originY}%`,
               mixBlendMode: 'screen',
-              // CRT screen rounding: deeper layers get more rounded
               borderRadius: bulgeAmount > 0 ? `${bulgeAmount * 25 * (depth / layers)}%` : undefined,
               overflow: bulgeAmount > 0 ? 'hidden' : undefined,
+              WebkitMaskImage: maskImage,
+              maskImage,
             }}
           >
             {renderMedia(mediaStyle)}

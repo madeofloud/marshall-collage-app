@@ -63,6 +63,7 @@ export default function HomePage() {
   const [flBulgeAmount, setFlBulgeAmount] = useState(defaultFeedbackProps.bulgeAmount);
   const [flScanlineOpacity, setFlScanlineOpacity] = useState(defaultFeedbackProps.scanlineOpacity);
   const [flScanlineSpeed, setFlScanlineSpeed] = useState(defaultFeedbackProps.scanlineSpeed);
+  const [flFeatherAmount, setFlFeatherAmount] = useState(defaultFeedbackProps.featherAmount);
   const [flDurationSeconds, setFlDurationSeconds] = useState(defaultFeedbackProps.durationSeconds);
   const [flFormat, setFlFormat] = useState<AspectFormat>('1x1');
   const [flSizeTier, setFlSizeTier] = useState<SizeTier>('medium');
@@ -261,6 +262,7 @@ export default function HomePage() {
     glowIntensity: flGlowIntensity, glowColor: flGlowColor,
     baseImage: flBaseImage, baseVideo: flBaseVideo,
     bulgeAmount: flBulgeAmount, scanlineOpacity: flScanlineOpacity, scanlineSpeed: flScanlineSpeed,
+    featherAmount: flFeatherAmount,
     durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
   };
 
@@ -278,6 +280,7 @@ export default function HomePage() {
     setFlBulgeAmount((data.bulgeAmount as number) ?? defaultFeedbackProps.bulgeAmount);
     setFlScanlineOpacity((data.scanlineOpacity as number) ?? defaultFeedbackProps.scanlineOpacity);
     setFlScanlineSpeed((data.scanlineSpeed as number) ?? defaultFeedbackProps.scanlineSpeed);
+    setFlFeatherAmount((data.featherAmount as number) ?? defaultFeedbackProps.featherAmount);
     setFlDurationSeconds((data.durationSeconds as number) ?? defaultFeedbackProps.durationSeconds);
     setFlFormat((data.format as AspectFormat) ?? '1x1');
     setFlSizeTier((data.sizeTier as SizeTier) ?? 'medium');
@@ -389,6 +392,7 @@ export default function HomePage() {
           glowIntensity: flGlowIntensity, glowColor: flGlowColor,
           baseImage: flBaseImage, baseVideo: flBaseVideo,
           bulgeAmount: flBulgeAmount, scanlineOpacity: flScanlineOpacity, scanlineSpeed: flScanlineSpeed,
+          featherAmount: flFeatherAmount,
           durationSeconds: flDurationSeconds, format: flFormat, sizeTier: flSizeTier, codec: flCodec,
         },
         setExportProgressFl,
@@ -572,6 +576,7 @@ export default function HomePage() {
           bulgeAmount={flBulgeAmount} setBulgeAmount={setFlBulgeAmount}
           scanlineOpacity={flScanlineOpacity} setScanlineOpacity={setFlScanlineOpacity}
           scanlineSpeed={flScanlineSpeed} setScanlineSpeed={setFlScanlineSpeed}
+          featherAmount={flFeatherAmount} setFeatherAmount={setFlFeatherAmount}
           durationSeconds={flDurationSeconds} setDurationSeconds={setFlDurationSeconds}
           format={flFormat} setFormat={setFlFormat}
           sizeTier={flSizeTier} setSizeTier={setFlSizeTier}
