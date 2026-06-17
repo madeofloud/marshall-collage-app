@@ -35,7 +35,7 @@ export type InfinityZoomStudioProps = {
   items: InfinityZoomItem[]; setItems: React.Dispatch<React.SetStateAction<InfinityZoomItem[]>>;
   zoomFactor: number; setZoomFactor: React.Dispatch<React.SetStateAction<number>>;
   secondsPerImage: number; setSecondsPerImage: React.Dispatch<React.SetStateAction<number>>;
-  dissolve: number; setDissolve: React.Dispatch<React.SetStateAction<number>>;
+  feather: number; setFeather: React.Dispatch<React.SetStateAction<number>>;
   motion: 'linear' | 'eased'; setMotion: React.Dispatch<React.SetStateAction<'linear' | 'eased'>>;
   backgroundColor: string; setBackgroundColor: React.Dispatch<React.SetStateAction<string>>;
   format: AspectFormat; setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
@@ -52,7 +52,7 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
   items, setItems,
   zoomFactor, setZoomFactor,
   secondsPerImage, setSecondsPerImage,
-  dissolve, setDissolve,
+  feather, setFeather,
   motion, setMotion,
   backgroundColor, setBackgroundColor,
   format, setFormat, sizeTier, setSizeTier, codec, setCodec,
@@ -68,7 +68,7 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
     Math.round(secondsPerImage * INFINITY_ZOOM_FPS * Math.max(1, items.length))
   );
 
-  const inputProps = { items, zoomFactor, secondsPerImage, dissolve, motion, backgroundColor };
+  const inputProps = { items, zoomFactor, secondsPerImage, feather, motion, backgroundColor };
 
   const uploadFile = async (file: File) => {
     setUploading(true);
@@ -216,9 +216,9 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
           {/* Zoom */}
           <div className="space-y-4">
             <SectionTitle>Zoom</SectionTitle>
-            <SliderRow label="Zoom per step" value={zoomFactor} min={1.5} max={6} step={0.1} onChange={setZoomFactor} />
-            <SliderRow label="Seconds per image" value={secondsPerImage} min={1} max={12} step={0.5} onChange={setSecondsPerImage} />
-            <SliderRow label="Dissolve" value={dissolve} min={0.1} max={1} step={0.05} onChange={setDissolve} />
+            <SliderRow label="Zoom per step" value={zoomFactor} min={1.5} max={5} step={0.1} onChange={setZoomFactor} />
+            <SliderRow label="Seconds per image" value={secondsPerImage} min={1} max={10} step={0.5} onChange={setSecondsPerImage} />
+            <SliderRow label="Edge feather" value={feather} min={0} max={1} step={0.05} onChange={setFeather} />
             <div className="space-y-1.5">
               <span className="text-xs text-white/70">Motion</span>
               <div className="grid grid-cols-2 gap-1 mt-1">

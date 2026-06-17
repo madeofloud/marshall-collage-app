@@ -84,7 +84,7 @@ export default function HomePage() {
   const [izItems, setIzItems] = useState<InfinityZoomItem[]>(defaultInfinityZoomProps.items);
   const [izZoomFactor, setIzZoomFactor] = useState(defaultInfinityZoomProps.zoomFactor);
   const [izSecondsPerImage, setIzSecondsPerImage] = useState(defaultInfinityZoomProps.secondsPerImage);
-  const [izDissolve, setIzDissolve] = useState(defaultInfinityZoomProps.dissolve);
+  const [izFeather, setIzFeather] = useState(defaultInfinityZoomProps.feather);
   const [izMotion, setIzMotion] = useState<'linear' | 'eased'>(defaultInfinityZoomProps.motion);
   const [izBackgroundColor, setIzBackgroundColor] = useState(defaultInfinityZoomProps.backgroundColor);
   const [izFormat, setIzFormat] = useState<AspectFormat>('1x1');
@@ -306,7 +306,7 @@ export default function HomePage() {
 
   const infinityZoomSessionData = {
     items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
-    dissolve: izDissolve, motion: izMotion, backgroundColor: izBackgroundColor,
+    feather: izFeather, motion: izMotion, backgroundColor: izBackgroundColor,
     format: izFormat, sizeTier: izSizeTier, codec: izCodec,
   };
 
@@ -314,7 +314,7 @@ export default function HomePage() {
     setIzItems((data.items as InfinityZoomItem[]) ?? []);
     setIzZoomFactor((data.zoomFactor as number) ?? defaultInfinityZoomProps.zoomFactor);
     setIzSecondsPerImage((data.secondsPerImage as number) ?? defaultInfinityZoomProps.secondsPerImage);
-    setIzDissolve((data.dissolve as number) ?? defaultInfinityZoomProps.dissolve);
+    setIzFeather((data.feather as number) ?? defaultInfinityZoomProps.feather);
     setIzMotion((data.motion as 'linear' | 'eased') ?? defaultInfinityZoomProps.motion);
     setIzBackgroundColor((data.backgroundColor as string) ?? defaultInfinityZoomProps.backgroundColor);
     setIzFormat((data.format as AspectFormat) ?? '1x1');
@@ -450,7 +450,7 @@ export default function HomePage() {
         '/api/render-infinityzoom',
         {
           items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
-          dissolve: izDissolve, motion: izMotion, backgroundColor: izBackgroundColor,
+          feather: izFeather, motion: izMotion, backgroundColor: izBackgroundColor,
           format: izFormat, sizeTier: izSizeTier, codec: izCodec,
         },
         setExportProgressIz,
@@ -483,7 +483,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">5.1</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">5.2</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -659,7 +659,7 @@ export default function HomePage() {
           items={izItems} setItems={setIzItems}
           zoomFactor={izZoomFactor} setZoomFactor={setIzZoomFactor}
           secondsPerImage={izSecondsPerImage} setSecondsPerImage={setIzSecondsPerImage}
-          dissolve={izDissolve} setDissolve={setIzDissolve}
+          feather={izFeather} setFeather={setIzFeather}
           motion={izMotion} setMotion={setIzMotion}
           backgroundColor={izBackgroundColor} setBackgroundColor={setIzBackgroundColor}
           format={izFormat} setFormat={setIzFormat}

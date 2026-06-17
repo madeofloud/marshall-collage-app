@@ -12,13 +12,13 @@ const REGION = process.env.REMOTION_GCP_REGION || 'europe-west1';
 export async function POST(request: Request) {
   const body = await request.json();
   const {
-    items, zoomFactor, secondsPerImage, dissolve, motion, backgroundColor,
+    items, zoomFactor, secondsPerImage, feather, motion, backgroundColor,
     format, sizeTier, codec,
   } = body as {
     items: { url: string; type: 'image' | 'video' }[];
     zoomFactor: number;
     secondsPerImage: number;
-    dissolve: number;
+    feather: number;
     motion: 'linear' | 'eased';
     backgroundColor: string;
     format: AspectFormat;
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           region: REGION as 'europe-west1',
           serveUrl: SERVE_URL,
           composition: compositionId,
-          inputProps: { items, zoomFactor, secondsPerImage, dissolve, motion, backgroundColor },
+          inputProps: { items, zoomFactor, secondsPerImage, feather, motion, backgroundColor },
           codec: codec as 'h264' | 'prores',
           ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: 'hq' } : {}),
           imageFormat: 'jpeg',
