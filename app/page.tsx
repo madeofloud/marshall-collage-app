@@ -6,7 +6,9 @@ import { ControlPanel } from '@/components/ControlPanel';
 import { SessionManager } from '@/components/SessionManager';
 import { StopMotionStudio } from '@/components/StopMotionStudio';
 import { FeedbackLoopStudio } from '@/components/FeedbackLoopStudio';
+import { InfinityZoomStudio } from '@/components/InfinityZoomStudio';
 import { defaultFeedbackProps } from '@/remotion/src/FeedbackLoop';
+import { defaultInfinityZoomProps, type InfinityZoomItem } from '@/remotion/src/InfinityZoom';
 import {
   type PanelOverrides,
   type PanelOverride,
@@ -17,7 +19,7 @@ import { type Alignment } from '@/remotion/src/stopMotionTypes';
 import { generatePanels } from '@/remotion/src/generation';
 
 export default function HomePage() {
-  const [mode, setMode] = useState<'collage' | 'stopmotion' | 'feedbackloop'>('collage');
+  const [mode, setMode] = useState<'collage' | 'stopmotion' | 'feedbackloop' | 'infinityzoom'>('collage');
   const [images, setImages] = useState<string[]>([]);
   const [background, setBackground] = useState('#121212');
   const [rotationSpeed, setRotationSpeed] = useState(60);
@@ -76,6 +78,20 @@ export default function HomePage() {
   const [activeCollageName, setActiveCollageName] = useState<string | null>(null);
   const [activeStopMotionName, setActiveStopMotionName] = useState<string | null>(null);
   const [activeFeedbackLoopName, setActiveFeedbackLoopName] = useState<string | null>(null);
+  const [activeInfinityZoomName, setActiveInfinityZoomName] = useState<string | null>(null);
+
+  // Infinity Zoom workspace state
+  const [izItems, setIzItems] = useState<InfinityZoomItem[]>(defaultInfinityZoomProps.items);
+  const [izZoomFactor, setIzZoomFactor] = useState(defaultInfinityZoomProps.zoomFactor);
+  const [izSecondsPerImage, setIzSecondsPerImage] = useState(defaultInfinityZoomProps.secondsPerImage);
+  const [izEasingType, setIzEasingType] = useState<'inout' | 'in' | 'out'>(defaultInfinityZoomProps.easingType);
+  const [izBackgroundColor, setIzBackgroundColor] = useState(defaultInfinityZoomProps.backgroundColor);
+  const [izFormat, setIzFormat] = useState<AspectFormat>('1x1');
+  const [izSizeTier, setIzSizeTier] = useState<SizeTier>('medium');
+  const [izCodec, setIzCodec] = useState<'h264' | 'prores'>('h264');
+  const [isExportingIz, setIsExportingIz] = useState(false);
+  const [exportProgressIz, setExportProgressIz] = useState<number>(0);
+  const [exportDownloadUrlIz, setExportDownloadUrlIz] = useState<string | null>(null);
 
   const selectedOverride = useMemo<PanelOverride | null>(
     () => (selectedPanelId ? panelOverrides[selectedPanelId] ?? null : null),
@@ -85,7 +101,7 @@ export default function HomePage() {
   // Undo history for panel overrides (Cmd+Z / Ctrl+Z)
   const undoStack = useRef<PanelOverrides[]>([]);
 
-  const isAnyExporting = isExporting || isExportingStopMotion || isExportingFl;
+  const isAnyExporting = isExporting || isExportingStopMotion || isExportingFl || isExportingIz;
 
   // Warn user before leaving while a render is in progress.
   useEffect(() => {
@@ -287,6 +303,23 @@ export default function HomePage() {
     setFlCodec((data.codec as 'h264' | 'prores') ?? 'h264');
   };
 
+  const infinityZoomSessionData = {
+    items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
+    easingType: izEasingType, backgroundColor: izBackgroundColor,
+    format: izFormat, sizeTier: izSizeTier, codec: izCodec,
+  };
+
+  const handleLoadInfinityZoom = (data: Record<string, unknown>) => {
+    setIzItems((data.items as InfinityZoomItem[]) ?? []);
+    setIzZoomFactor((data.zoomFactor as number) ?? defaultInfinityZoomProps.zoomFactor);
+    setIzSecondsPerImage((data.secondsPerImage as number) ?? defaultInfinityZoomProps.secondsPerImage);
+    setIzEasingType((data.easingType as 'inout' | 'in' | 'out') ?? defaultInfinityZoomProps.easingType);
+    setIzBackgroundColor((data.backgroundColor as string) ?? defaultInfinityZoomProps.backgroundColor);
+    setIzFormat((data.format as AspectFormat) ?? '1x1');
+    setIzSizeTier((data.sizeTier as SizeTier) ?? 'medium');
+    setIzCodec((data.codec as 'h264' | 'prores') ?? 'h264');
+  };
+
   const streamRender = async (
     url: string,
     bodyData: object,
@@ -406,6 +439,29 @@ export default function HomePage() {
     }
   };
 
+  const handleExportInfinityZoom = async () => {
+    if (izItems.length === 0) return;
+    setIsExportingIz(true);
+    setExportProgressIz(0);
+    try {
+      await streamRender(
+        '/api/render-infinityzoom',
+        {
+          items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
+          easingType: izEasingType, backgroundColor: izBackgroundColor,
+          format: izFormat, sizeTier: izSizeTier, codec: izCodec,
+        },
+        setExportProgressIz,
+        setExportDownloadUrlIz,
+        setIsExportingIz,
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      alert(msg);
+      setIsExportingIz(false);
+    }
+  };
+
   const currentSessionData = {
     images,
     background,
@@ -425,7 +481,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">4.8</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">5.0</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -433,6 +489,7 @@ export default function HomePage() {
                 ['collage', '360° Collage'],
                 ['stopmotion', 'Object Tracking'],
                 ['feedbackloop', 'Feedback Loop'],
+                ['infinityzoom', 'Infinity Zoom'],
               ] as const
             ).map(([m, label]) => (
               <button
@@ -455,7 +512,8 @@ export default function HomePage() {
           <span className="text-xs text-white/40 truncate max-w-[180px]">
             {mode === 'collage' ? (activeCollageName ?? 'Untitled')
               : mode === 'stopmotion' ? (activeStopMotionName ?? 'Untitled')
-              : (activeFeedbackLoopName ?? 'Untitled')}
+              : mode === 'feedbackloop' ? (activeFeedbackLoopName ?? 'Untitled')
+              : (activeInfinityZoomName ?? 'Untitled')}
           </span>
           {mode === 'collage' ? (
             <SessionManager
@@ -471,12 +529,19 @@ export default function HomePage() {
               kind="stopmotion"
               onActiveChange={setActiveStopMotionName}
             />
-          ) : (
+          ) : mode === 'feedbackloop' ? (
             <SessionManager
               currentData={feedbackLoopSessionData}
               onLoad={handleLoadFeedbackLoop}
               kind="feedbackloop"
               onActiveChange={setActiveFeedbackLoopName}
+            />
+          ) : (
+            <SessionManager
+              currentData={infinityZoomSessionData}
+              onLoad={handleLoadInfinityZoom}
+              kind="infinityzoom"
+              onActiveChange={setActiveInfinityZoomName}
             />
           )}
         </div>
@@ -561,7 +626,7 @@ export default function HomePage() {
           exportDownloadUrl={exportDownloadUrlStopMotion}
           onClearDownload={() => setExportDownloadUrlStopMotion(null)}
         />
-      ) : (
+      ) : mode === 'feedbackloop' ? (
         <FeedbackLoopStudio
           layers={flLayers} setLayers={setFlLayers}
           zoomFactor={flZoomFactor} setZoomFactor={setFlZoomFactor}
@@ -586,6 +651,22 @@ export default function HomePage() {
           exportProgress={exportProgressFl}
           exportDownloadUrl={exportDownloadUrlFl}
           onClearDownload={() => setExportDownloadUrlFl(null)}
+        />
+      ) : (
+        <InfinityZoomStudio
+          items={izItems} setItems={setIzItems}
+          zoomFactor={izZoomFactor} setZoomFactor={setIzZoomFactor}
+          secondsPerImage={izSecondsPerImage} setSecondsPerImage={setIzSecondsPerImage}
+          easingType={izEasingType} setEasingType={setIzEasingType}
+          backgroundColor={izBackgroundColor} setBackgroundColor={setIzBackgroundColor}
+          format={izFormat} setFormat={setIzFormat}
+          sizeTier={izSizeTier} setSizeTier={setIzSizeTier}
+          codec={izCodec} setCodec={setIzCodec}
+          onExport={handleExportInfinityZoom}
+          isExporting={isExportingIz}
+          exportProgress={exportProgressIz}
+          exportDownloadUrl={exportDownloadUrlIz}
+          onClearDownload={() => setExportDownloadUrlIz(null)}
         />
       )}
     </main>

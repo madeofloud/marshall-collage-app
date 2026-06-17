@@ -3,6 +3,7 @@ import { Composition } from 'remotion';
 import { Collage } from './Collage';
 import { StopMotion } from './StopMotion';
 import { FeedbackLoop, defaultFeedbackProps, FEEDBACK_FPS } from './FeedbackLoop';
+import { InfinityZoom, defaultInfinityZoomProps, INFINITY_ZOOM_FPS } from './InfinityZoom';
 import {
   ALL_FORMATS,
   ALL_SIZES,
@@ -102,6 +103,34 @@ export const RemotionRoot: React.FC = () => (
             defaultProps={defaultFeedbackProps}
             calculateMetadata={({ props }) => ({
               durationInFrames: Math.max(1, Math.round(props.durationSeconds * FEEDBACK_FPS)),
+              props,
+            })}
+          />
+        );
+      })
+    )}
+    {ALL_FORMATS.flatMap((format) =>
+      ALL_SIZES.map((size) => {
+        const { width, height } = getFormatDimensions(format, size);
+        const id = `InfinityZoom-${format}-${size}`;
+        const defaultFrames = Math.round(
+          defaultInfinityZoomProps.secondsPerImage * INFINITY_ZOOM_FPS * 3
+        );
+        return (
+          <Composition
+            key={id}
+            id={id}
+            component={InfinityZoom}
+            durationInFrames={defaultFrames}
+            fps={INFINITY_ZOOM_FPS}
+            width={width}
+            height={height}
+            defaultProps={defaultInfinityZoomProps}
+            calculateMetadata={({ props }) => ({
+              durationInFrames: Math.max(
+                1,
+                Math.round(props.secondsPerImage * INFINITY_ZOOM_FPS * Math.max(1, props.items.length))
+              ),
               props,
             })}
           />
