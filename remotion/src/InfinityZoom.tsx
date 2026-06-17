@@ -5,10 +5,10 @@ export type InfinityZoomItem = { url: string; type: 'image' | 'video' };
 
 export type InfinityZoomProps = {
   items: InfinityZoomItem[];
-  zoomFactor: number;       // how much the nested portal grows per step (e.g. 2.2)
+  zoomFactor: number;       // scale multiplier per step (e.g. 2.5 means portal grows 2.5× per segment)
   secondsPerImage: number;  // duration of each zoom step
-  feather: number;          // 0–1: softness of the nested rectangle edges
-  depthBlur: number;        // 0–1: blur on distant (small) layers
+  feather: number;          // 0–1: edge softness on the portal rectangle
+  depthBlur: number;        // 0–1: blur on distant (small) portals
   driftAmount: number;      // 0–1: how far off-center each portal sits
   backgroundColor: string;
 };
@@ -17,18 +17,18 @@ export const INFINITY_ZOOM_FPS = 24;
 
 export const defaultInfinityZoomProps: InfinityZoomProps = {
   items: [],
-  zoomFactor: 2.2,
+  zoomFactor: 3,
   secondsPerImage: 1.5,
-  feather: 0.06,
-  depthBlur: 0.15,
-  driftAmount: 0.2,
+  feather: 0.04,
+  depthBlur: 0.1,
+  driftAmount: 0.15,
   backgroundColor: '#000000',
 };
 
-// Deterministic per-image off-center origin using a simple integer hash, so the
-// nested portal sits at a slightly different point per image instead of dead center.
-function layerOrigin(idx: number, driftAmount: number): { ox: number; oy: number } {
-  const s = ((idx * 2654435761) >>> 0);
+// Deterministic per-step origin — all layers in a step share the same zoom
+// direction so the portal stays coherent. Drifts between steps.
+function stepOrigin(step: number, driftAmount: number): { ox: number; oy: number } {
+  const s = ((step * 2654435761) >>> 0);
   const ox = 50 + (((s & 0xFF) / 255) - 0.5) * 2 * driftAmount * 30;
   const oy = 50 + ((((s >> 8) & 0xFF) / 255) - 0.5) * 2 * driftAmount * 30;
   return { ox, oy };
@@ -45,38 +45,31 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
   }
 
   const N = items.length;
-  const Z = Math.max(1.3, zoomFactor);
+  const Z = Math.max(1.5, zoomFactor);
   const stepFrames = Math.max(1, Math.round(secondsPerImage * fps));
   const totalFrames = stepFrames * N;
 
-  // Recursive / Droste infinite zoom:
-  //  - The current image fills the screen and scales up continuously.
-  //  - The NEXT image is nested as a smaller rectangle centred (or drifted) on
-  //    top of it, scaling up at the exact same rate.
-  //  - Each deeper layer (o) is the same image shrunk by Z^o so it reads as a
-  //    rectangular "portal" embedded in the layer in front of it.
-  //  - When a layer reaches full screen the modulo recursion swaps it out
-  //    seamlessly (invisible cut), so the camera never appears to stop.
-  //  - Exponential scale => constant log-velocity => constant perceived speed.
+  // frac: 0→1 within the current step
+  // step: which image is the current "background" layer (o=0)
   const tf = ((frame % totalFrames) + totalFrames) % totalFrames;
-  const frac = (tf % stepFrames) / stepFrames; // 0 → 1 within the current step
-  const step = Math.floor(tf / stepFrames);     // which image currently fills the screen
+  const frac = (tf % stepFrames) / stepFrames;
+  const step = Math.floor(tf / stepFrames);
 
-  // How many nested layers until the deepest is too small to matter.
-  const depth = Math.ceil(Math.log(1 / 0.015) / Math.log(Z)) + 1;
+  // Number of nested portals to render — stop when too small to see.
+  const depth = Math.ceil(Math.log(1 / 0.012) / Math.log(Z)) + 1;
 
-  // Rectangular edge feather (fades all four sides). feather 0 → hard edges.
-  const f = feather * 9; // percent inset
-  const rectMask = f > 0.01
+  // All layers in this step share the same zoom origin (drift is per-step).
+  const { ox, oy } = stepOrigin(step, driftAmount);
+
+  // Rectangular feather mask applied to all nested portals (o > 0).
+  // feather=0 → perfectly sharp rectangle. feather=1 → soft vignette-like edges.
+  const featherPct = feather * 12; // convert 0-1 to a percent inset
+  const portalMask: React.CSSProperties = featherPct > 0.3
     ? {
         WebkitMaskImage:
-          `linear-gradient(to right, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%), ` +
-          `linear-gradient(to bottom, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%)`,
-        WebkitMaskComposite: 'source-in',
+          `linear-gradient(to right, transparent 0%, #000 ${featherPct}%, #000 ${100 - featherPct}%, transparent 100%)`,
         maskImage:
-          `linear-gradient(to right, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%), ` +
-          `linear-gradient(to bottom, transparent 0%, #000 ${f}%, #000 ${100 - f}%, transparent 100%)`,
-        maskComposite: 'intersect' as const,
+          `linear-gradient(to right, transparent 0%, #000 ${featherPct}%, #000 ${100 - featherPct}%, transparent 100%)`,
       }
     : {};
 
@@ -84,27 +77,31 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
     width: '100%', height: '100%', objectFit: 'cover', display: 'block',
   };
 
-  // Build layer stack from largest (back) to smallest (front).
+  // ─── KEY INSIGHT ──────────────────────────────────────────────────────────
+  // Render o=0 FIRST (bottom of stack) → it is the current image filling the
+  // screen. Then o=1, o=2 … are rendered on top. Since each has a smaller
+  // scale, they naturally appear as a smaller rectangle sitting over the layer
+  // below — creating the nested portal / Droste effect.
+  // CSS transform: scale() does NOT clip; transparent areas around the scaled
+  // image let the layer below show through.
+  // ──────────────────────────────────────────────────────────────────────────
   const layers: React.ReactNode[] = [];
 
-  for (let o = depth; o >= 0; o--) {
+  for (let o = 0; o <= depth; o++) {
     const scale = Math.pow(Z, frac - o);
-
-    // Skip layers that have grown past the screen or are vanishingly small.
-    if (scale > Z * 1.5) continue;
+    if (scale < 0.008) continue; // too small to matter
 
     const imgIdx = ((step + o) % N + N) % N;
     const item = items[imgIdx];
-    const { ox, oy } = layerOrigin(step + o, driftAmount);
 
-    // Depth-of-field blur on the small (distant) portals only.
-    const blurPx = scale < 1 && depthBlur > 0
-      ? depthBlur * 16 * Math.max(0, 1 - scale) / Math.max(0.04, scale)
+    // Subtle depth-of-field blur on the smallest (most distant) portals.
+    const blurPx = scale < 0.3 && depthBlur > 0
+      ? depthBlur * 12 * Math.max(0, 0.3 - scale) / 0.3
       : 0;
 
-    // Fade the deepest tiny layers in to avoid pop-in.
-    const opacity = scale < 0.1
-      ? interpolate(scale, [0.015, 0.1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    // Fade in the tiniest portals so they don't pop.
+    const opacity = scale < 0.05
+      ? interpolate(scale, [0.008, 0.05], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
       : 1;
 
     layers.push(
@@ -113,10 +110,10 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
         style={{
           transform: `scale(${scale})`,
           transformOrigin: `${ox}% ${oy}%`,
-          filter: blurPx > 0.3 ? `blur(${blurPx.toFixed(1)}px)` : undefined,
+          filter: blurPx > 0.2 ? `blur(${blurPx.toFixed(1)}px)` : undefined,
           opacity,
-          // The outermost layer fills the frame; nested portals get feathered edges.
-          ...(o > 0 ? rectMask : {}),
+          // Only apply the feather mask to nested portals, not the base layer.
+          ...(o > 0 ? portalMask : {}),
         }}
       >
         {item.type === 'video'
