@@ -48,7 +48,7 @@ export async function POST(request: Request) {
             glowIntensity, baseColor, glowColor, baseImage, durationSeconds,
           },
           codec: codec as 'h264' | 'prores',
-          ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: '422-hq' } : {}),
+          ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: 'hq' } : {}),
           imageFormat: 'jpeg',
           privacy: 'public',
           outName: `feedbackloop-${format}-${width}x${height}.${fileExt}`,
