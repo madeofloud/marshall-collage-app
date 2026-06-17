@@ -55,32 +55,19 @@ const SliderRow = ({
 );
 
 export type FeedbackLoopStudioProps = {
-  layers: number;
-  setLayers: React.Dispatch<React.SetStateAction<number>>;
-  zoomFactor: number;
-  setZoomFactor: React.Dispatch<React.SetStateAction<number>>;
-  rotationPerLayer: number;
-  setRotationPerLayer: React.Dispatch<React.SetStateAction<number>>;
-  rotationSpeed: number;
-  setRotationSpeed: React.Dispatch<React.SetStateAction<number>>;
-  hueShift: number;
-  setHueShift: React.Dispatch<React.SetStateAction<number>>;
-  glowIntensity: number;
-  setGlowIntensity: React.Dispatch<React.SetStateAction<number>>;
-  baseColor: string;
-  setBaseColor: React.Dispatch<React.SetStateAction<string>>;
-  glowColor: string;
-  setGlowColor: React.Dispatch<React.SetStateAction<string>>;
-  baseImage: string | null;
-  setBaseImage: React.Dispatch<React.SetStateAction<string | null>>;
-  durationSeconds: number;
-  setDurationSeconds: React.Dispatch<React.SetStateAction<number>>;
-  format: AspectFormat;
-  setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
-  sizeTier: SizeTier;
-  setSizeTier: React.Dispatch<React.SetStateAction<SizeTier>>;
-  codec: 'h264' | 'prores';
-  setCodec: React.Dispatch<React.SetStateAction<'h264' | 'prores'>>;
+  layers: number; setLayers: React.Dispatch<React.SetStateAction<number>>;
+  zoomFactor: number; setZoomFactor: React.Dispatch<React.SetStateAction<number>>;
+  rotationPerLayer: number; setRotationPerLayer: React.Dispatch<React.SetStateAction<number>>;
+  rotationSpeed: number; setRotationSpeed: React.Dispatch<React.SetStateAction<number>>;
+  hueShift: number; setHueShift: React.Dispatch<React.SetStateAction<number>>;
+  glowIntensity: number; setGlowIntensity: React.Dispatch<React.SetStateAction<number>>;
+  baseColor: string; setBaseColor: React.Dispatch<React.SetStateAction<string>>;
+  glowColor: string; setGlowColor: React.Dispatch<React.SetStateAction<string>>;
+  baseImage: string | null; setBaseImage: React.Dispatch<React.SetStateAction<string | null>>;
+  durationSeconds: number; setDurationSeconds: React.Dispatch<React.SetStateAction<number>>;
+  format: AspectFormat; setFormat: React.Dispatch<React.SetStateAction<AspectFormat>>;
+  sizeTier: SizeTier; setSizeTier: React.Dispatch<React.SetStateAction<SizeTier>>;
+  codec: 'h264' | 'prores'; setCodec: React.Dispatch<React.SetStateAction<'h264' | 'prores'>>;
   onExport: () => void;
   isExporting: boolean;
   exportProgress?: number;
@@ -102,11 +89,7 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   format, setFormat,
   sizeTier, setSizeTier,
   codec, setCodec,
-  onExport,
-  isExporting,
-  exportProgress,
-  exportDownloadUrl,
-  onClearDownload,
+  onExport, isExporting, exportProgress, exportDownloadUrl, onClearDownload,
 }) => {
   const playerRef = useRef<PlayerRef>(null);
   const { width: compWidth, height: compHeight } = getFormatDimensions(format, sizeTier);
@@ -138,11 +121,14 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-w-0">
-      {/* Preview */}
-      <div className="flex-1 flex items-center justify-center bg-neutral-950 overflow-hidden min-h-0">
+    <>
+      {/* Canvas — fills all space left of the sidebar */}
+      <div
+        className="flex-1 flex items-center justify-center bg-neutral-950 overflow-hidden min-w-0"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
         <div
-          className="relative"
           style={{
             aspectRatio: `${compWidth} / ${compHeight}`,
             maxWidth: '100%',
@@ -166,149 +152,130 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="h-[340px] overflow-y-auto border-t border-white/10 bg-neutral-900 flex">
-        {/* Left column: tunnel parameters */}
-        <div className="flex-1 p-4 space-y-4 border-r border-white/10 min-w-0">
-          <SectionTitle>Tunnel</SectionTitle>
-          <SliderRow label="Layers" value={layers} min={3} max={20} onChange={setLayers} />
-          <SliderRow label="Zoom per layer" value={zoomFactor} min={0.65} max={0.99} step={0.01} onChange={setZoomFactor} />
-          <SliderRow label="Rotation per layer (°)" value={rotationPerLayer} min={0} max={20} step={0.5} onChange={setRotationPerLayer} />
-          <SliderRow label="Spin speed (°/s)" value={rotationSpeed} min={0} max={120} step={1} onChange={setRotationSpeed} />
+      {/* Right sidebar — same width as ControlPanel */}
+      <div className="w-80 h-full bg-neutral-950 border-l border-white/10 overflow-y-auto flex-shrink-0">
+        <div className="p-5 space-y-6">
 
-          <SectionTitle>Color</SectionTitle>
-          <SliderRow label="Hue shift per layer (°)" value={hueShift} min={0} max={60} step={1} onChange={setHueShift} />
-          <SliderRow label="Glow intensity" value={glowIntensity} min={0} max={1} step={0.01} onChange={setGlowIntensity} />
-
-          <div className="flex gap-3">
-            <div className="space-y-1 flex-1">
-              <span className="text-xs text-white/70">Base color</span>
-              <input
-                type="color"
-                value={baseColor}
-                onChange={(e) => setBaseColor(e.target.value)}
-                className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
-              />
-            </div>
-            <div className="space-y-1 flex-1">
-              <span className="text-xs text-white/70">Glow color</span>
-              <input
-                type="color"
-                value={glowColor}
-                onChange={(e) => setGlowColor(e.target.value)}
-                className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right column: image, duration, export */}
-        <div className="w-52 flex-shrink-0 p-4 space-y-4">
-          <SectionTitle>Base image</SectionTitle>
-          {baseImage ? (
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={baseImage} alt="" className="w-full h-20 object-cover rounded" />
-              <button
-                type="button"
-                onClick={() => setBaseImage(null)}
-                className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <label
-              className="flex flex-col items-center justify-center w-full h-20 border border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition text-white/30 hover:text-white/60 text-xs gap-1"
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnter={(e) => e.preventDefault()}
-            >
-              <span className="text-lg">+</span>
-              Drop or click to upload
-              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-            </label>
-          )}
-
-          <SectionTitle>Duration</SectionTitle>
-          <SliderRow label="Seconds" value={durationSeconds} min={2} max={30} step={1} onChange={setDurationSeconds} />
-
-          <SectionTitle>Format</SectionTitle>
-          <div className="grid grid-cols-3 gap-1">
-            {ALL_FORMATS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFormat(f)}
-                className={`text-[10px] py-1 rounded ${format === f ? 'bg-marshall-gold text-black font-semibold' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-              >
-                {FORMAT_LABELS[f]}
-              </button>
-            ))}
-          </div>
-
-          <SectionTitle>Quality</SectionTitle>
-          <div className="grid grid-cols-3 gap-1">
-            {ALL_SIZES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSizeTier(s)}
-                className={`text-[10px] py-1 rounded capitalize ${sizeTier === s ? 'bg-marshall-gold text-black font-semibold' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-              >
-                {SIZE_LABELS[s]}
-              </button>
-            ))}
-          </div>
-
-          <SectionTitle>Codec</SectionTitle>
-          <div className="grid grid-cols-2 gap-1">
-            {(['h264', 'prores'] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCodec(c)}
-                className={`text-[10px] py-1 rounded uppercase ${codec === c ? 'bg-marshall-gold text-black font-semibold' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-              >
-                {c === 'h264' ? 'H264' : 'ProRes'}
-              </button>
-            ))}
-          </div>
-
-          <SectionTitle>Export</SectionTitle>
-          {exportDownloadUrl ? (
-            <a
-              href={exportDownloadUrl}
-              download
-              onClick={onClearDownload}
-              className="block w-full py-2 bg-marshall-gold text-black font-semibold text-xs rounded text-center hover:brightness-110 transition"
-            >
-              Download Video
-            </a>
-          ) : isExporting && exportProgress !== undefined ? (
-            <div className="space-y-1.5">
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-marshall-gold transition-all duration-500"
-                  style={{ width: `${Math.round(exportProgress * 100)}%` }}
-                />
+          {/* Base image */}
+          <div>
+            <SectionTitle>Base image</SectionTitle>
+            {baseImage ? (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={baseImage} alt="" className="w-full h-24 object-cover rounded" />
+                <button
+                  type="button"
+                  onClick={() => setBaseImage(null)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition"
+                >
+                  ✕
+                </button>
               </div>
-              <p className="text-center text-xs text-white/50">
-                Rendering… {Math.round(exportProgress * 100)}%
-              </p>
+            ) : (
+              <label
+                className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition text-white/30 hover:text-white/60 text-xs gap-1"
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnter={(e) => e.preventDefault()}
+              >
+                <span className="text-2xl">+</span>
+                Drop or click to upload
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            )}
+          </div>
+
+          {/* Tunnel */}
+          <div className="space-y-4">
+            <SectionTitle>Tunnel</SectionTitle>
+            <SliderRow label="Layers" value={layers} min={3} max={20} onChange={setLayers} />
+            <SliderRow label="Zoom per layer" value={zoomFactor} min={0.65} max={0.99} step={0.01} onChange={setZoomFactor} />
+            <SliderRow label="Rotation per layer (°)" value={rotationPerLayer} min={0} max={20} step={0.5} onChange={setRotationPerLayer} />
+            <SliderRow label="Spin speed (°/s)" value={rotationSpeed} min={0} max={120} step={1} onChange={setRotationSpeed} />
+          </div>
+
+          {/* Color */}
+          <div className="space-y-4">
+            <SectionTitle>Color</SectionTitle>
+            <SliderRow label="Hue shift per layer (°)" value={hueShift} min={0} max={60} step={1} onChange={setHueShift} />
+            <SliderRow label="Glow intensity" value={glowIntensity} min={0} max={1} step={0.01} onChange={setGlowIntensity} />
+            <div className="flex gap-3 mt-1">
+              <div className="space-y-1 flex-1">
+                <span className="text-xs text-white/70">Base color</span>
+                <input type="color" value={baseColor} onChange={(e) => setBaseColor(e.target.value)}
+                  className="w-full h-8 rounded cursor-pointer border-0 bg-transparent" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <span className="text-xs text-white/70">Glow color</span>
+                <input type="color" value={glowColor} onChange={(e) => setGlowColor(e.target.value)}
+                  className="w-full h-8 rounded cursor-pointer border-0 bg-transparent" />
+              </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onExport}
-              disabled={isExporting}
-              className="w-full py-2 bg-white/10 text-white text-xs font-semibold rounded hover:bg-white/15 disabled:opacity-30 transition"
-            >
-              Export Video
-            </button>
-          )}
+          </div>
+
+          {/* Duration */}
+          <div className="space-y-4">
+            <SectionTitle>Duration</SectionTitle>
+            <SliderRow label="Seconds" value={durationSeconds} min={2} max={30} step={1} onChange={setDurationSeconds} />
+          </div>
+
+          {/* Format */}
+          <div>
+            <SectionTitle>Format</SectionTitle>
+            <div className="grid grid-cols-5 gap-1">
+              {ALL_FORMATS.map((f) => (
+                <button key={f} type="button" onClick={() => setFormat(f)}
+                  className={`py-2 rounded text-xs font-medium transition ${format === f ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+                  {FORMAT_LABELS[f]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Export */}
+          <div>
+            <SectionTitle>Export</SectionTitle>
+            <div className="grid grid-cols-3 gap-1 mb-3">
+              {ALL_SIZES.map((s) => (
+                <button key={s} type="button" onClick={() => setSizeTier(s)}
+                  className={`py-1.5 rounded text-xs font-medium capitalize transition ${sizeTier === s ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+                  {SIZE_LABELS[s]}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-1 mb-3">
+              {(['h264', 'prores'] as const).map((c) => (
+                <button key={c} type="button" onClick={() => setCodec(c)}
+                  className={`py-1.5 rounded text-xs font-medium uppercase transition ${codec === c ? 'bg-marshall-gold text-black' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+                  {c === 'h264' ? 'H264' : 'ProRes'}
+                </button>
+              ))}
+            </div>
+            {exportDownloadUrl ? (
+              <a href={exportDownloadUrl} download onClick={onClearDownload}
+                className="block w-full py-2.5 bg-marshall-gold text-black font-semibold text-sm rounded text-center hover:brightness-110 transition">
+                Download Video
+              </a>
+            ) : isExporting && exportProgress !== undefined ? (
+              <div className="space-y-1.5">
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-marshall-gold transition-all duration-500"
+                    style={{ width: `${Math.round(exportProgress * 100)}%` }} />
+                </div>
+                <p className="text-center text-xs text-white/50">
+                  Rendering… {Math.round(exportProgress * 100)}%
+                </p>
+              </div>
+            ) : (
+              <button type="button" onClick={onExport} disabled={isExporting}
+                className="w-full py-2.5 bg-white/10 text-white text-sm font-semibold rounded hover:bg-white/15 disabled:opacity-30 transition">
+                Export Video
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
-    </div>
+    </>
   );
 };
