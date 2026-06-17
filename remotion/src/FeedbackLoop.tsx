@@ -61,8 +61,9 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
   const globalRotation = t * rotationSpeed;
   const baseHue = glowColor.length === 7 ? hexToHue(glowColor) : 200;
 
-  const baseContent = (
-    <>
+  return (
+    <AbsoluteFill style={{ background: baseColor, overflow: 'hidden' }}>
+      {/* Background layer — always visible behind all tunnel frames */}
       <AbsoluteFill style={{ background: baseColor }} />
       {baseImage && (
         <Img
@@ -70,21 +71,16 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       )}
-    </>
-  );
 
-  return (
-    <AbsoluteFill style={{ background: baseColor, overflow: 'hidden' }}>
-      {/* Background — visible only in corners where no layer reaches */}
-      {baseContent}
-
-      {/* Layers: i=0 is outermost (rendered first = behind),
-          i=layers-1 is innermost (rendered last = in front).
-          Each layer shows the base content + color tint at decreasing scale. */}
+      {/* Tunnel frames: i=0 outermost (behind), i=layers-1 innermost (front).
+          Each frame is a scaled+rotated rectangle with a color border only —
+          no solid fill so the background image shows through. */}
       {Array.from({ length: layers }, (_, i) => {
         const scale = Math.pow(zoomFactor, i + 1);
         const rotation = globalRotation + rotationPerLayer * (i + 1);
         const hue = (baseHue + hueShift * i) % 360;
+        // Inner layers slightly more opaque so tunnel has depth
+        const opacity = glowIntensity * (0.4 + 0.6 * (i / layers));
 
         return (
           <AbsoluteFill
@@ -94,12 +90,19 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
               transformOrigin: 'center center',
             }}
           >
-            {baseContent}
-            {/* Color tint shifts hue per layer */}
+            {/* Show base image at each layer scale */}
+            {baseImage && (
+              <Img
+                src={baseImage}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            )}
+            {!baseImage && <AbsoluteFill style={{ background: baseColor }} />}
+            {/* Color tint */}
             <AbsoluteFill
               style={{
                 background: `hsl(${hue}, 90%, 55%)`,
-                opacity: glowIntensity,
+                opacity,
                 mixBlendMode: 'screen',
               }}
             />
