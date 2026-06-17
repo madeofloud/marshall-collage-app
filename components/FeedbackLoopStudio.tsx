@@ -112,13 +112,24 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
   const { width: compWidth, height: compHeight } = getFormatDimensions(format, sizeTier);
   const durationInFrames = Math.max(1, Math.round(durationSeconds * FEEDBACK_FPS));
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const loadFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (ev) => setBaseImage(ev.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) loadFile(file);
     e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) loadFile(file);
   };
 
   const inputProps = {
@@ -207,9 +218,14 @@ export const FeedbackLoopStudio: React.FC<FeedbackLoopStudioProps> = ({
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full h-20 border border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition text-white/30 hover:text-white/60 text-xs gap-1">
+            <label
+              className="flex flex-col items-center justify-center w-full h-20 border border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition text-white/30 hover:text-white/60 text-xs gap-1"
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnter={(e) => e.preventDefault()}
+            >
               <span className="text-lg">+</span>
-              Upload image
+              Drop or click to upload
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </label>
           )}
