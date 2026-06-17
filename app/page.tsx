@@ -84,7 +84,8 @@ export default function HomePage() {
   const [izItems, setIzItems] = useState<InfinityZoomItem[]>(defaultInfinityZoomProps.items);
   const [izZoomFactor, setIzZoomFactor] = useState(defaultInfinityZoomProps.zoomFactor);
   const [izSecondsPerImage, setIzSecondsPerImage] = useState(defaultInfinityZoomProps.secondsPerImage);
-  const [izEasingType, setIzEasingType] = useState<'inout' | 'in' | 'out'>(defaultInfinityZoomProps.easingType);
+  const [izDissolve, setIzDissolve] = useState(defaultInfinityZoomProps.dissolve);
+  const [izMotion, setIzMotion] = useState<'linear' | 'eased'>(defaultInfinityZoomProps.motion);
   const [izBackgroundColor, setIzBackgroundColor] = useState(defaultInfinityZoomProps.backgroundColor);
   const [izFormat, setIzFormat] = useState<AspectFormat>('1x1');
   const [izSizeTier, setIzSizeTier] = useState<SizeTier>('medium');
@@ -305,7 +306,7 @@ export default function HomePage() {
 
   const infinityZoomSessionData = {
     items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
-    easingType: izEasingType, backgroundColor: izBackgroundColor,
+    dissolve: izDissolve, motion: izMotion, backgroundColor: izBackgroundColor,
     format: izFormat, sizeTier: izSizeTier, codec: izCodec,
   };
 
@@ -313,7 +314,8 @@ export default function HomePage() {
     setIzItems((data.items as InfinityZoomItem[]) ?? []);
     setIzZoomFactor((data.zoomFactor as number) ?? defaultInfinityZoomProps.zoomFactor);
     setIzSecondsPerImage((data.secondsPerImage as number) ?? defaultInfinityZoomProps.secondsPerImage);
-    setIzEasingType((data.easingType as 'inout' | 'in' | 'out') ?? defaultInfinityZoomProps.easingType);
+    setIzDissolve((data.dissolve as number) ?? defaultInfinityZoomProps.dissolve);
+    setIzMotion((data.motion as 'linear' | 'eased') ?? defaultInfinityZoomProps.motion);
     setIzBackgroundColor((data.backgroundColor as string) ?? defaultInfinityZoomProps.backgroundColor);
     setIzFormat((data.format as AspectFormat) ?? '1x1');
     setIzSizeTier((data.sizeTier as SizeTier) ?? 'medium');
@@ -448,7 +450,7 @@ export default function HomePage() {
         '/api/render-infinityzoom',
         {
           items: izItems, zoomFactor: izZoomFactor, secondsPerImage: izSecondsPerImage,
-          easingType: izEasingType, backgroundColor: izBackgroundColor,
+          dissolve: izDissolve, motion: izMotion, backgroundColor: izBackgroundColor,
           format: izFormat, sizeTier: izSizeTier, codec: izCodec,
         },
         setExportProgressIz,
@@ -481,7 +483,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">5.0</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">5.1</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -657,7 +659,8 @@ export default function HomePage() {
           items={izItems} setItems={setIzItems}
           zoomFactor={izZoomFactor} setZoomFactor={setIzZoomFactor}
           secondsPerImage={izSecondsPerImage} setSecondsPerImage={setIzSecondsPerImage}
-          easingType={izEasingType} setEasingType={setIzEasingType}
+          dissolve={izDissolve} setDissolve={setIzDissolve}
+          motion={izMotion} setMotion={setIzMotion}
           backgroundColor={izBackgroundColor} setBackgroundColor={setIzBackgroundColor}
           format={izFormat} setFormat={setIzFormat}
           sizeTier={izSizeTier} setSizeTier={setIzSizeTier}
