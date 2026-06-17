@@ -1,7 +1,7 @@
 import { renderMediaOnCloudrun } from '@remotion/cloudrun/client';
 import { type AspectFormat, type SizeTier, getFormatDimensions } from '@/remotion/src/types';
 
-const INFINITY_ZOOM_FPS = 30;
+const INFINITY_ZOOM_FPS = 24;
 
 export const maxDuration = 300;
 
@@ -12,15 +12,13 @@ const REGION = process.env.REMOTION_GCP_REGION || 'europe-west1';
 export async function POST(request: Request) {
   const body = await request.json();
   const {
-    items, zoomFactor, secondsPerImage, feather, depthBlur, motion, backgroundColor,
+    items, maxZoom, secondsPerImage, motionBlur, backgroundColor,
     format, sizeTier, codec,
   } = body as {
     items: { url: string; type: 'image' | 'video' }[];
-    zoomFactor: number;
+    maxZoom: number;
     secondsPerImage: number;
-    feather: number;
-    depthBlur: number;
-    motion: 'linear' | 'eased';
+    motionBlur: number;
     backgroundColor: string;
     format: AspectFormat;
     sizeTier: SizeTier;
@@ -51,7 +49,7 @@ export async function POST(request: Request) {
           region: REGION as 'europe-west1',
           serveUrl: SERVE_URL,
           composition: compositionId,
-          inputProps: { items, zoomFactor, secondsPerImage, feather, depthBlur, motion, backgroundColor },
+          inputProps: { items, maxZoom, secondsPerImage, motionBlur, backgroundColor },
           codec: codec as 'h264' | 'prores',
           ...(codec === 'prores' ? { pixelFormat: 'yuv422p10le', proResProfile: 'hq' } : {}),
           imageFormat: 'jpeg',
