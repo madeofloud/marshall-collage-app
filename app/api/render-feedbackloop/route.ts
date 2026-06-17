@@ -1,6 +1,7 @@
 import { renderMediaOnCloudrun } from '@remotion/cloudrun/client';
 import { type AspectFormat, type SizeTier, getFormatDimensions } from '@/remotion/src/types';
-import { FEEDBACK_FPS } from '@/remotion/src/FeedbackLoop';
+
+const FEEDBACK_FPS = 25;
 
 export const maxDuration = 300;
 
