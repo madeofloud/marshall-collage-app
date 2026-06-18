@@ -117,7 +117,7 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
         }}
       >
         {item.type === 'video'
-          ? <Video src={item.url} style={mediaStyle} pauseWhenBuffering loop />
+          ? <Video src={item.url} style={mediaStyle} pauseWhenBuffering loop muted />
           : <Img src={item.url} style={mediaStyle} />}
       </AbsoluteFill>
     );

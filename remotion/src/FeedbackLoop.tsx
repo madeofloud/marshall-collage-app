@@ -79,6 +79,7 @@ export const FeedbackLoop: React.FC<FeedbackLoopProps> = ({
         src={baseVideo}
         style={style}
         pauseWhenBuffering
+        muted
       />
     ) : baseImage ? (
       <Img src={baseImage} style={style} />
