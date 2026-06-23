@@ -17,8 +17,8 @@ export const INFINITY_ZOOM_FPS = 24;
 
 export const defaultInfinityZoomProps: InfinityZoomProps = {
   items: [],
-  zoomFactor: 3,
-  secondsPerImage: 1.5,
+  zoomFactor: 22,
+  secondsPerImage: 2,
   feather: 0.04,
   depthBlur: 0.1,
   driftAmount: 0.15,

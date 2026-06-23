@@ -218,8 +218,8 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
           {/* Zoom */}
           <div className="space-y-4">
             <SectionTitle>Zoom</SectionTitle>
-            <SliderRow label="Zoom factor (×)" value={zoomFactor} min={1.5} max={4} step={0.1} onChange={setZoomFactor} />
-            <SliderRow label="Seconds per image" value={secondsPerImage} min={0.75} max={4} step={0.25} onChange={setSecondsPerImage} />
+            <SliderRow label="Zoom factor (×)" value={zoomFactor} min={3} max={40} step={1} onChange={setZoomFactor} />
+            <SliderRow label="Seconds per image" value={secondsPerImage} min={1} max={5} step={0.25} onChange={setSecondsPerImage} />
             <SliderRow label="Drift (off-center)" value={driftAmount} min={0} max={1} step={0.05} onChange={setDriftAmount} />
             <SliderRow label="Edge feather" value={feather} min={0} max={1} step={0.05} onChange={setFeather} />
             <SliderRow label="Depth blur" value={depthBlur} min={0} max={1} step={0.05} onChange={setDepthBlur} />
