@@ -26,6 +26,11 @@ const defaultCollageProps: CollageProps = {
   rotationSpeed: 60,
   grainAmount: 0.8,
   panelOverrides: {},
+  camTilt: 0,
+  camRoll: 0,
+  camTiltSwing: 0,
+  camRollSwing: 0,
+  camSwingSpeed: 1,
 };
 
 const defaultStopMotionProps: StopMotionProps = {

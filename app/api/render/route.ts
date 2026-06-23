@@ -22,6 +22,11 @@ export async function POST(request: Request) {
     format,
     sizeTier,
     codec,
+    camTilt = 0,
+    camRoll = 0,
+    camTiltSwing = 0,
+    camRollSwing = 0,
+    camSwingSpeed = 1,
   } = body as {
     images: string[];
     background: string;
@@ -31,6 +36,11 @@ export async function POST(request: Request) {
     format: AspectFormat;
     sizeTier: SizeTier;
     codec: 'h264' | 'prores';
+    camTilt?: number;
+    camRoll?: number;
+    camTiltSwing?: number;
+    camRollSwing?: number;
+    camSwingSpeed?: number;
   };
 
   if (!CLOUD_RUN_URL || !SERVE_URL) {
@@ -67,6 +77,11 @@ export async function POST(request: Request) {
             rotationSpeed,
             grainAmount: isTransparent ? 0 : grainAmount,
             panelOverrides,
+            camTilt,
+            camRoll,
+            camTiltSwing,
+            camRollSwing,
+            camSwingSpeed,
           },
           codec: resolvedCodec as 'h264' | 'prores',
           ...(isTransparent ? { pixelFormat: 'yuva444p10le', proResProfile: '4444' } : {}),

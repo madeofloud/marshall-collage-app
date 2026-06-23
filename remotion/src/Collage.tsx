@@ -18,6 +18,11 @@ export const Collage: React.FC<Props> = ({
   grainAmount,
   panelOverrides,
   backgroundImage,
+  camTilt = 0,
+  camRoll = 0,
+  camTiltSwing = 0,
+  camRollSwing = 0,
+  camSwingSpeed = 1,
   selectedPanel,
   showSelection,
   onSelectPanel,
@@ -35,6 +40,14 @@ export const Collage: React.FC<Props> = ({
   const totalRotationDeg = turns * 360;
   const clusterY =
     durationInFrames > 0 ? (frame / durationInFrames) * totalRotationDeg : 0;
+
+  // Camera oscillation: sinus wave synced to the loop so it loops seamlessly.
+  // camSwingSpeed=1 → one full swing per rotation loop.
+  const swingPhase = durationInFrames > 0
+    ? (frame / durationInFrames) * Math.PI * 2 * camSwingSpeed
+    : 0;
+  const activeTilt = camTilt + Math.sin(swingPhase) * camTiltSwing;
+  const activeRoll = camRoll + Math.cos(swingPhase) * camRollSwing;
   const grainSeed = frame;
 
   // Scale based on the SHORTER side so panels fit in any aspect ratio
@@ -113,23 +126,34 @@ export const Collage: React.FC<Props> = ({
         </div>
       )}
 
+      {/* Camera wrapper — tilt + roll applied here, loops seamlessly */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           transformStyle: 'preserve-3d',
-          transform: `rotateY(${clusterY}deg)`,
+          transform: `rotateX(${activeTilt}deg) rotateZ(${activeRoll}deg)`,
         }}
       >
-        {scaledPanels.map((p) => (
-          <PanelComponent
-            key={p.id}
-            panel={p}
-            isSelected={p.id === selectedPanel}
-            showOutline={showSelection}
-            onSelect={onSelectPanel}
-          />
-        ))}
+        {/* Scene — collage rotation */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            transformStyle: 'preserve-3d',
+            transform: `rotateY(${clusterY}deg)`,
+          }}
+        >
+          {scaledPanels.map((p) => (
+            <PanelComponent
+              key={p.id}
+              panel={p}
+              isSelected={p.id === selectedPanel}
+              showOutline={showSelection}
+              onSelect={onSelectPanel}
+            />
+          ))}
+        </div>
       </div>
     </AbsoluteFill>
   );

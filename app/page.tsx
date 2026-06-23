@@ -28,6 +28,12 @@ export default function HomePage() {
   const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
+  const [camTilt, setCamTilt] = useState(0);
+  const [camRoll, setCamRoll] = useState(0);
+  const [camTiltSwing, setCamTiltSwing] = useState(0);
+  const [camRollSwing, setCamRollSwing] = useState(0);
+  const [camSwingSpeed, setCamSwingSpeed] = useState(1);
+
   const [format, setFormat] = useState<AspectFormat>('1x1');
   const [sizeTier, setSizeTier] = useState<SizeTier>('medium');
   const [codec, setCodec] = useState<'h264' | 'prores'>('h264');
@@ -241,6 +247,11 @@ export default function HomePage() {
     setSizeTier((data.sizeTier as SizeTier) ?? 'medium');
     setCodec((data.codec as 'h264' | 'prores') ?? 'h264');
     setBackgroundImage((data.backgroundImage as string | null) ?? null);
+    setCamTilt((data.camTilt as number) ?? 0);
+    setCamRoll((data.camRoll as number) ?? 0);
+    setCamTiltSwing((data.camTiltSwing as number) ?? 0);
+    setCamRollSwing((data.camRollSwing as number) ?? 0);
+    setCamSwingSpeed((data.camSwingSpeed as number) ?? 1);
     setSelectedPanelId(null);
   };
 
@@ -405,7 +416,8 @@ export default function HomePage() {
     try {
       await streamRender(
         '/api/render',
-        { images, background, rotationSpeed, grainAmount, panelOverrides, format, sizeTier, codec },
+        { images, background, rotationSpeed, grainAmount, panelOverrides, format, sizeTier, codec,
+          camTilt, camRoll, camTiltSwing, camRollSwing, camSwingSpeed },
         setExportProgress,
         setExportDownloadUrl,
         setIsExporting,
@@ -476,6 +488,11 @@ export default function HomePage() {
     sizeTier,
     codec,
     backgroundImage,
+    camTilt,
+    camRoll,
+    camTiltSwing,
+    camRollSwing,
+    camSwingSpeed,
   };
 
   return (
@@ -485,7 +502,7 @@ export default function HomePage() {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-sm font-semibold tracking-wide">
-            Marshall Motion Studio <span className="font-normal text-white/50">6.1</span>
+            Marshall Motion Studio <span className="font-normal text-white/50">6.2</span>
           </h1>
           <div className="flex gap-1">
             {(
@@ -560,6 +577,11 @@ export default function HomePage() {
             rotationSpeed={rotationSpeed}
             grainAmount={grainAmount}
             panelOverrides={panelOverrides}
+            camTilt={camTilt}
+            camRoll={camRoll}
+            camTiltSwing={camTiltSwing}
+            camRollSwing={camRollSwing}
+            camSwingSpeed={camSwingSpeed}
             selectedPanelId={selectedPanelId}
             setSelectedPanelId={setSelectedPanelId}
             setPanelOverrides={setPanelOverrides}
@@ -576,6 +598,16 @@ export default function HomePage() {
             setRotationSpeed={setRotationSpeed}
             grainAmount={grainAmount}
             setGrainAmount={setGrainAmount}
+            camTilt={camTilt}
+            setCamTilt={setCamTilt}
+            camRoll={camRoll}
+            setCamRoll={setCamRoll}
+            camTiltSwing={camTiltSwing}
+            setCamTiltSwing={setCamTiltSwing}
+            camRollSwing={camRollSwing}
+            setCamRollSwing={setCamRollSwing}
+            camSwingSpeed={camSwingSpeed}
+            setCamSwingSpeed={setCamSwingSpeed}
             selectedPanelId={selectedPanelId}
             panelOverride={selectedOverride}
             onUpdatePanelOverride={handleUpdatePanelOverride}

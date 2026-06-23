@@ -24,6 +24,16 @@ type Props = {
   setRotationSpeed: (n: number) => void;
   grainAmount: number;
   setGrainAmount: (n: number) => void;
+  camTilt: number;
+  setCamTilt: (n: number) => void;
+  camRoll: number;
+  setCamRoll: (n: number) => void;
+  camTiltSwing: number;
+  setCamTiltSwing: (n: number) => void;
+  camRollSwing: number;
+  setCamRollSwing: (n: number) => void;
+  camSwingSpeed: number;
+  setCamSwingSpeed: (n: number) => void;
   selectedPanelId: string | null;
   panelOverride: PanelOverride | null;
   onUpdatePanelOverride: (override: PanelOverride) => void;
@@ -136,6 +146,16 @@ export const ControlPanel: React.FC<Props> = ({
   setRotationSpeed,
   grainAmount,
   setGrainAmount,
+  camTilt,
+  setCamTilt,
+  camRoll,
+  setCamRoll,
+  camTiltSwing,
+  setCamTiltSwing,
+  camRollSwing,
+  setCamRollSwing,
+  camSwingSpeed,
+  setCamSwingSpeed,
   selectedPanelId,
   panelOverride,
   onUpdatePanelOverride,
@@ -308,6 +328,56 @@ export const ControlPanel: React.FC<Props> = ({
             step={0.05}
             onChange={setGrainAmount}
             defaultValue={0}
+          />
+        </section>
+
+        {/* Camera */}
+        <section className="space-y-4">
+          <SectionTitle>Camera</SectionTitle>
+          <SliderRow
+            label="Tilt (top/low)"
+            value={camTilt}
+            min={-60}
+            max={60}
+            step={1}
+            onChange={setCamTilt}
+            defaultValue={0}
+          />
+          <SliderRow
+            label="Roll (Dutch angle)"
+            value={camRoll}
+            min={-45}
+            max={45}
+            step={1}
+            onChange={setCamRoll}
+            defaultValue={0}
+          />
+          <SliderRow
+            label="Tilt swing"
+            value={camTiltSwing}
+            min={0}
+            max={60}
+            step={1}
+            onChange={setCamTiltSwing}
+            defaultValue={0}
+          />
+          <SliderRow
+            label="Roll swing"
+            value={camRollSwing}
+            min={0}
+            max={45}
+            step={1}
+            onChange={setCamRollSwing}
+            defaultValue={0}
+          />
+          <SliderRow
+            label="Swing speed"
+            value={camSwingSpeed}
+            min={0.25}
+            max={4}
+            step={0.25}
+            onChange={setCamSwingSpeed}
+            defaultValue={1}
           />
         </section>
 

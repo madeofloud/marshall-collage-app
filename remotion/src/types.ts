@@ -30,6 +30,12 @@ export type CollageProps = {
   grainAmount: number;
   panelOverrides: PanelOverrides;
   backgroundImage?: string;
+  // Camera motion
+  camTilt: number;        // static tilt, degrees. positive = top-down, negative = low angle
+  camRoll: number;        // static roll (Dutch angle), degrees
+  camTiltSwing: number;   // oscillation amplitude for tilt, degrees
+  camRollSwing: number;   // oscillation amplitude for roll, degrees
+  camSwingSpeed: number;  // oscillation speed multiplier (1 = one full cycle per rotation loop)
 };
 
 // ----------------------------------------
