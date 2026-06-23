@@ -1,7 +1,12 @@
 import React from 'react';
 import { AbsoluteFill, Img, Video, useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 
-export type InfinityZoomItem = { url: string; type: 'image' | 'video' };
+export type InfinityZoomItem = {
+  url: string;
+  type: 'image' | 'video';
+  ox?: number; // focal point X, 0–100 (percent). undefined = use drift.
+  oy?: number; // focal point Y, 0–100 (percent). undefined = use drift.
+};
 
 export type InfinityZoomProps = {
   items: InfinityZoomItem[];
@@ -58,8 +63,15 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
   // Number of nested portals to render — stop when too small to see.
   const depth = Math.ceil(Math.log(1 / 0.012) / Math.log(Z)) + 1;
 
-  // All layers in this step share the same zoom origin (drift is per-step).
-  const { ox, oy } = stepOrigin(step, driftAmount);
+  // Helper: resolve focal point for a given absolute image index.
+  // Uses the item's explicit ox/oy if set, otherwise falls back to deterministic drift.
+  const focalPoint = (absIdx: number) => {
+    const item = items[((absIdx % N) + N) % N];
+    if (item.ox !== undefined && item.oy !== undefined) {
+      return { ox: item.ox, oy: item.oy };
+    }
+    return stepOrigin(absIdx, driftAmount);
+  };
 
   // Rectangular feather mask applied to all nested portals (o > 0).
   // feather=0 → perfectly sharp rectangle. feather=1 → soft vignette-like edges.
@@ -91,8 +103,10 @@ export const InfinityZoom: React.FC<InfinityZoomProps> = ({
     const scale = Math.pow(Z, frac - o);
     if (scale < 0.008) continue; // too small to matter
 
-    const imgIdx = ((step + o) % N + N) % N;
+    const absIdx = step + o;
+    const imgIdx = (absIdx % N + N) % N;
     const item = items[imgIdx];
+    const { ox, oy } = focalPoint(absIdx);
 
     // Subtle depth-of-field blur on the smallest (most distant) portals.
     const blurPx = scale < 0.3 && depthBlur > 0

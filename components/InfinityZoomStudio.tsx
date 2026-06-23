@@ -165,30 +165,69 @@ export const InfinityZoomStudio: React.FC<InfinityZoomStudioProps> = ({
 
             {items.length > 0 && (
               <ul className="space-y-1.5 mb-3">
-                {items.map((item, i) => (
-                  <li key={item.url + i} className="flex items-center gap-2 group">
-                    <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-white/5">
-                      {item.type === 'video' ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">▶</div>
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.url} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <span className="flex-1 text-xs text-white/60 truncate">Image {i + 1}</span>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                      <button type="button" onClick={() => i > 0 && moveItem(i, i - 1)}
-                        disabled={i === 0}
-                        className="text-white/30 hover:text-white disabled:opacity-20 text-xs px-1">↑</button>
-                      <button type="button" onClick={() => i < items.length - 1 && moveItem(i, i + 1)}
-                        disabled={i === items.length - 1}
-                        className="text-white/30 hover:text-white disabled:opacity-20 text-xs px-1">↓</button>
-                      <button type="button" onClick={() => removeItem(i)}
-                        className="text-white/20 hover:text-red-400 text-xs px-1">✕</button>
-                    </div>
-                  </li>
-                ))}
+                {items.map((item, i) => {
+                  const hasFocal = item.ox !== undefined && item.oy !== undefined;
+                  const fOx = item.ox ?? 50;
+                  const fOy = item.oy ?? 50;
+                  const setFocalPoint = (e: React.MouseEvent<HTMLDivElement>) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const ox = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                    const oy = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+                    setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, ox, oy } : it));
+                  };
+                  const clearFocal = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setItems((prev) => prev.map((it, idx) => {
+                      if (idx !== i) return it;
+                      const { ox: _ox, oy: _oy, ...rest } = it;
+                      void _ox; void _oy;
+                      return rest;
+                    }));
+                  };
+                  return (
+                    <li key={item.url + i} className="flex items-center gap-2 group">
+                      {/* Thumbnail — click to set focal point */}
+                      <div
+                        title="Click to set focal zoom point"
+                        onClick={setFocalPoint}
+                        className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-white/5 cursor-crosshair"
+                      >
+                        {item.type === 'video' ? (
+                          <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">▶</div>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.url} alt="" className="w-full h-full object-cover pointer-events-none" />
+                        )}
+                        {/* Focal point crosshair dot */}
+                        <div
+                          className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                          style={{ left: `${fOx}%`, top: `${fOy}%` }}
+                        >
+                          <div className={`w-full h-full rounded-full border-2 ${hasFocal ? 'border-marshall-gold bg-marshall-gold/40' : 'border-white/40 bg-white/10'}`} />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-white/60 truncate">Image {i + 1}</div>
+                        {hasFocal && (
+                          <button type="button" onClick={clearFocal}
+                            className="text-[10px] text-white/30 hover:text-white/60 leading-none">
+                            reset focal
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button type="button" onClick={() => i > 0 && moveItem(i, i - 1)}
+                          disabled={i === 0}
+                          className="text-white/30 hover:text-white disabled:opacity-20 text-xs px-1">↑</button>
+                        <button type="button" onClick={() => i < items.length - 1 && moveItem(i, i + 1)}
+                          disabled={i === items.length - 1}
+                          className="text-white/30 hover:text-white disabled:opacity-20 text-xs px-1">↓</button>
+                        <button type="button" onClick={() => removeItem(i)}
+                          className="text-white/20 hover:text-red-400 text-xs px-1">✕</button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
 
