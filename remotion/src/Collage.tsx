@@ -79,6 +79,7 @@ export const Collage: React.FC<Props> = ({
       tiltX: src.tiltX,
       tiltZ: src.tiltZ,
       width: src.width * s,
+      thickness: (src.thickness ?? 0) * s,
     };
   });
 

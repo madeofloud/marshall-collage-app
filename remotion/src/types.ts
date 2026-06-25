@@ -8,6 +8,7 @@ export type Panel = {
   tiltX: number;
   tiltZ: number;
   width: number;
+  thickness: number; // depth of the panel slab in px (0 = flat)
 };
 
 export type PanelOverride = {
@@ -18,6 +19,7 @@ export type PanelOverride = {
   tiltX: number;
   tiltZ: number;
   width: number;
+  thickness?: number;
   hidden?: boolean;
 };
 

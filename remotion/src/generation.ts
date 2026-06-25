@@ -51,6 +51,7 @@ export function generatePanels(imageUrls: string[]): Panel[] {
         image: entry.url,
         worldX, worldY, worldZ,
         facingAngle, tiltX, tiltZ, width,
+        thickness: 0,
       });
     });
   });
