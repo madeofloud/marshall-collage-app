@@ -9,16 +9,12 @@ type Props = {
   onSelect?: (id: string) => void;
 };
 
-const SIDE_COLOR = '#f5f5f5';
-
 export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline, onSelect }) => {
   const handleClick = (e: React.MouseEvent) => {
     if (!onSelect) return;
     e.stopPropagation();
     onSelect(panel.id);
   };
-
-  const t = panel.thickness ?? 0;
 
   return (
     <div
@@ -41,78 +37,10 @@ export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline
         outlineOffset: '2px',
       }}
     >
-      {/* Front face — the image */}
       <Img
         src={panel.image}
-        style={{
-          width: '100%',
-          height: 'auto',
-          display: 'block',
-          pointerEvents: 'none',
-          position: 'relative',
-          // Push the front face forward by half the thickness so sides are centred
-          transform: t > 0 ? `translateZ(${t / 2}px)` : undefined,
-        }}
+        style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none' }}
       />
-
-      {/* Side faces — only rendered when thickness > 0 */}
-      {t > 0 && (
-        <>
-          {/* Left face */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: t, height: '100%',
-            background: SIDE_COLOR,
-            transformOrigin: 'left center',
-            transform: `rotateY(-90deg)`,
-            backfaceVisibility: 'hidden',
-          }} />
-
-          {/* Right face */}
-          <div style={{
-            position: 'absolute',
-            top: 0, right: 0,
-            width: t, height: '100%',
-            background: SIDE_COLOR,
-            transformOrigin: 'right center',
-            transform: `rotateY(90deg)`,
-            backfaceVisibility: 'hidden',
-          }} />
-
-          {/* Top face */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%', height: t,
-            background: SIDE_COLOR,
-            transformOrigin: 'top center',
-            transform: `rotateX(-90deg)`,
-            backfaceVisibility: 'hidden',
-          }} />
-
-          {/* Bottom face */}
-          <div style={{
-            position: 'absolute',
-            bottom: 0, left: 0,
-            width: '100%', height: t,
-            background: SIDE_COLOR,
-            transformOrigin: 'bottom center',
-            transform: `rotateX(90deg)`,
-            backfaceVisibility: 'hidden',
-          }} />
-
-          {/* Back face */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%', height: '100%',
-            background: SIDE_COLOR,
-            transform: `translateZ(${-t / 2}px)`,
-            backfaceVisibility: 'hidden',
-          }} />
-        </>
-      )}
     </div>
   );
 };

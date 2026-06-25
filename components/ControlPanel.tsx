@@ -455,15 +455,6 @@ export const ControlPanel: React.FC<Props> = ({
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, width: v })}
               defaultValue={basePanelOverride?.width ?? 200}
             />
-            <SliderRow
-              label="Thickness"
-              value={panelOverride.thickness ?? 0}
-              min={0}
-              max={20}
-              step={0.5}
-              onChange={(v) => onUpdatePanelOverride({ ...panelOverride, thickness: v })}
-              defaultValue={0}
-            />
           </section>
         )}
 
