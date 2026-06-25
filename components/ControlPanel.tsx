@@ -459,8 +459,8 @@ export const ControlPanel: React.FC<Props> = ({
               label="Thickness"
               value={panelOverride.thickness ?? 0}
               min={0}
-              max={120}
-              step={1}
+              max={20}
+              step={0.5}
               onChange={(v) => onUpdatePanelOverride({ ...panelOverride, thickness: v })}
               defaultValue={0}
             />

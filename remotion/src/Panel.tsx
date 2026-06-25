@@ -9,8 +9,7 @@ type Props = {
   onSelect?: (id: string) => void;
 };
 
-const SIDE_COLOR = '#1c1c1c';
-const SIDE_HIGHLIGHT = '#2e2e2e'; // top/bottom slightly lighter
+const SIDE_COLOR = '#f5f5f5';
 
 export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline, onSelect }) => {
   const handleClick = (e: React.MouseEvent) => {
@@ -86,7 +85,7 @@ export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline
             position: 'absolute',
             top: 0, left: 0,
             width: '100%', height: t,
-            background: SIDE_HIGHLIGHT,
+            background: SIDE_COLOR,
             transformOrigin: 'top center',
             transform: `rotateX(-90deg)`,
             backfaceVisibility: 'hidden',
@@ -108,7 +107,7 @@ export const PanelComponent: React.FC<Props> = ({ panel, isSelected, showOutline
             position: 'absolute',
             top: 0, left: 0,
             width: '100%', height: '100%',
-            background: '#111',
+            background: SIDE_COLOR,
             transform: `translateZ(${-t / 2}px)`,
             backfaceVisibility: 'hidden',
           }} />
